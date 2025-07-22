@@ -1,36 +1,48 @@
-# About The SDK
+# Fotara SDK
 
-This SDK is a Java-based library packaged as a JAR file, designed to help taxpayers seamlessly integrate with the national e-invoicing system. It provides end-to-end support for secure invoice generation and submission, including Certificate Signing Request (CSR) creation, private key management, QR code generation, digital signing, and secure submission via the reporting API. By automating compliance with e-invoicing regulations, the SDK ensures data integrity, authenticity, and a streamlined integration experience for developers.
+## About The SDK
 
-# Prerequisites
+This SDK is a Java-based library packaged as a JAR file, designed to help taxpayers seamlessly integrate with the national e-invoicing system. It provides end-to-end support for secure invoice generation and submission, including:
 
-- Java 11- 17 installed on your device.
-- permission to read and write from the target storage
-- active account on fotara.
-- valid taxpayer config file.
+- Certificate Signing Request (CSR) creation
+- Private key management
+- QR code generation
+- Digital signing
+- Secure submission via the reporting API
 
-# Taxpayer Config File
+By automating compliance with e-invoicing regulations, the SDK ensures data integrity, authenticity, and a streamlined integration experience for developers.
 
-&nbsp;
+---
+
+## Prerequisites
+
+- Java 11–17 installed on your device.
+- Permission to read/write from the target storage.
+- Active account on Fotara.
+- Valid taxpayer config file.
+
+---
+
+## Taxpayer Config File
 
 ```json
 {
-    "commonName": "",// Corporate Name
-    "serialNumber": "",// With the following format "TAXPAYER_NUMBER|SEQUENCE_NUMBER|DEVICE_ID"
-    "organizationIdentifier": "",// Main CNAT number
-    "organizationUnitName": "", //Child Corporate Name if exists
+    "commonName": "", // Corporate Name
+    "serialNumber": "", // Format: "TAXPAYER_NUMBER|SEQUENCE_NUMBER|DEVICE_ID"
+    "organizationIdentifier": "", // Main CNAT number
+    "organizationUnitName": "", // Child Corporate Name if exists
     "organizationName": "", // District
-    "countryName": "JO", // Country ISO-2 code, and should be allows JO
-    "invoiceType": "1100", // 4 digits EInvoice Type as the following: 
-                   // first digit to allow submit B2B E-Invoices
-                   // Second Digit to allow submit B2C E-Invoice
-                   // Third Digit to allow submit Special Taxes E-Invoice
-                   // Fourth Digits to allow submit Export E-Invoice
-    "location": "", // Main Branch location
-    "industry": "" // Sector (free text)
+    "countryName": "JO", // ISO-2 code, should be "JO"
+    "invoiceType": "1100", // 4-digit code: B2B, B2C, Special Tax, Export
+    "location": "", // Main branch location
+    "industry": "", // Sector (free text)
+    "email": "" // email
 }
+```
 
-// valid example
+### Valid Example
+
+```json
 {
   "commonName": "Test Corps",
   "serialNumber": "12342131312|1242412412|53222122",
@@ -40,145 +52,160 @@ This SDK is a Java-based library packaged as a JAR file, designed to help taxpay
   "countryName": "JO",
   "invoiceType": "1100",
   "location": "Amman, Jordan",
-  "industry": "Retail"
+  "industry": "Retail",
+  "email": "email@email.com"
 }
-
 ```
 
-&nbsp;
+---
 
-# How To Use?
+## How To Use
 
-you can use the sdk directly through command line with the following format
+Use the SDK from the command line in the following format:
 
-`java -Denv=<env> -jar fotara-sdk.jar <action> <args>`
+```bash
+java -Denv=<env> -jar fotara-sdk.jar <action> <args>
+```
 
-- ## Environments:
+### Environments
 
-    - "dev": used for development testing only
-    - "sim": used to interact with fotara simulation environment
-    - "prod": used to interact with fotara production environment.
-- ## Actions:
+- `dev`: For development/testing
+- `sim`: Fotara simulation environment
+- `prod`: Fotara production environment
 
-    - ### generate-csr-keys:
+---
 
-        - args:
+## Actions
 
-        - | Arg Name | Value | Example |
-                      | --- | --- | --- |
-          | directory | Output Directory, to store the generated key pairs and generated csr (notes all data will be stored encrypted) | /home/orgs/sdk/output |
-          | config-file | json config file path | /home/orgs/sdk/config.json |
+### `generate-csr-keys`
 
-        - output:
+**Args**
 
-        - | output Name | Value | location |
-                      | --- | --- | --- |
-          | csr.encoded | Certificate Sign Request Encrypted and Base64 Encoded | inside output path |
-          | private.pem | Private Key Encrypted file in pem format | inside output path |
-          | public.pem | Public Key Encrypted file in pem format | inside output path |
-          | csr.pem | Certificate Sign Request Encrypted in pem format | inside output path |
+| Arg Name     | Description                                           | Example                        |
+|--------------|-------------------------------------------------------|--------------------------------|
+| directory    | Output path for generated files (encrypted)           | `/home/orgs/sdk/output`        |
+| config-file  | Path to JSON config file                              | `/home/orgs/sdk/config.json`   |
 
-    - ### onboard:
+**Output**
 
-        - args:
+| File Name   | Description                              | Location             |
+|-------------|------------------------------------------|----------------------|
+| csr.encoded | Encrypted CSR (Base64)                  | Output directory     |
+| private.pem | Encrypted private key                   | Output directory     |
+| public.pem  | Encrypted public key                    | Output directory     |
+| csr.pem     | Encrypted CSR in PEM format             | Output directory     |
 
-            - | Arg Name | Value | Example |
-                              | --- | --- | --- |
-              | otp | otp generated from fotara portal (6 digits) | 123111 |
-              | directory | Output Directory, to store the generated key pairs and generated csr (notes all data will be stored encrypted) | /home/orgs/sdk/output |
-              | config-file | json config file path | /home/orgs/sdk/config.json |
+---
 
-            - output:
+### `onboard`
 
-            - | output Name | Value | location |
-                              | --- | --- | --- |
-              | csr.encoded | Certificate Sign Request Encrypted and Base64 Encoded | inside output path |
-              | private.pem | Private Key Encrypted file in pem format | inside output path |
-              | public.pem | Public Key Encrypted file in pem format | inside output path |
-              | csr.pem | Certificate Sign Request Encrypted in pem format | inside output path |
-              | einvoice_test_file.xml | E-Invoice Generated for testing process | inside output path |
-              | production_csid.cert | Production Certificate Encrypted | inside output path |
-              | production_response.json | Production Response From Fotara Encrypted | inside output path |
+**Args**
 
-    - ### validate:
+| Arg Name     | Description                                           | Example                        |
+|--------------|-------------------------------------------------------|--------------------------------|
+| otp          | OTP from Fotara portal                                | `123111`                       |
+| directory    | Output path for generated files (encrypted)           | `/home/orgs/sdk/output`        |
+| config-file  | Path to JSON config file                              | `/home/orgs/sdk/config.json`   |
 
-        - args:
+**Output**
 
-            - | Arg Name | Value | Example |
-                              | --- | --- | --- |
-              | eninvoice-xml-file-path | E-Invoice XML file Path Compliance with UBL 2.1 | /home/orgs/sdk/invoice.xml |
+| File Name              | Description                                 | Location          |
+|------------------------|---------------------------------------------|-------------------|
+| csr.encoded            | Encrypted CSR (Base64)                      | Output directory  |
+| private.pem            | Encrypted private key                      | Output directory  |
+| public.pem             | Encrypted public key                       | Output directory  |
+| csr.pem                | Encrypted CSR in PEM format                | Output directory  |
+| einvoice_test_file.xml | Sample E-Invoice for testing               | Output directory  |
+| production_csid.cert   | Encrypted production certificate           | Output directory  |
+| production_response.json| Encrypted response from Fotara            | Output directory  |
 
-            - output:
+---
 
-                - | output Name | Value | location |
-                                      | --- | --- | --- |
-                  | XSD VALIDATION | Showing Status of XSD Validation | inside console/ log |
-                  | CALCULATION VALIDATION | Showing Status of Calculation Validation | inside console/ log |
-                  | REGULATION VALIDATION | Showing Status of Regulation Validation | inside console/ log |
+### `validate`
 
-    - ### sign:
+**Args**
 
-        - args:
+| Arg Name                | Description                               | Example                       |
+|-------------------------|-------------------------------------------|-------------------------------|
+| einvoice-xml-file-path  | Path to E-Invoice XML file (UBL 2.1)      | `/home/orgs/sdk/invoice.xml`  |
 
-            - | Arg Name | Value | Example |
-                              | --- | --- | --- |
-              | xml-path | E-Invoice XML file Path Compliance with UBL 2.1 | /home/orgs/sdk/invoice.xml |
-              | private-key-path | Private Key Path Encrypted Generated from previous steps | /home/orgs/sdk/output/private.pem |
-              | certificate-path | Certificate Path Encrypted Generated from previous Steps | /home/orgs/sdk/output/production_csid.cert |
-              | output-path | Signed XML output path | /home/orgs/sdk/output/signed_invoice.xml |
+**Output (Console)**
 
-            - output:
+- XSD VALIDATION
+- CALCULATION VALIDATION
+- REGULATION VALIDATION
 
-                - | output Name | Value | location |
-                                      | --- | --- | --- |
-                  | Invoice Hash | Hash Of Invoice | inside console/ log |
-                  | QR Code | QR code Generated from Invoice Information | inside console/ log |
-                  | Signed XML | final Signed XML Generated and written on output path | inside output path |
+---
 
-    - ### generate-qr:
+### `sign`
 
-        - args:
+**Args**
 
-            - | Arg Name | Value | Example |
-                              | --- | --- | --- |
-              | xml-path | E-Invoice XML file Path Compliance with UBL 2.1 | /home/orgs/sdk/invoice.xml |
-              | private-key-path | Private Key Path Encrypted Generated from previous steps | /home/orgs/sdk/output/private.pem |
-              | certificate-path | Certificate Path Encrypted Generated from previous Steps | /home/orgs/sdk/output/production_csid.cert |
+| Arg Name         | Description                                      | Example                              |
+|------------------|--------------------------------------------------|--------------------------------------|
+| xml-path         | Path to E-Invoice XML (UBL 2.1)                  | `/home/orgs/sdk/invoice.xml`         |
+| private-key-path | Encrypted private key path                       | `/home/orgs/sdk/output/private.pem`  |
+| certificate-path | Encrypted certificate path                       | `/home/orgs/sdk/output/production_csid.cert` |
+| output-path      | Output path for signed XML                       | `/home/orgs/sdk/output/signed_invoice.xml` |
 
-            - output:
+**Output**
 
-                - | output Name | Value | location |
-                                      | --- | --- | --- |
-                  | Invoice Hash | Hash Of Invoice | inside console/ log |
-                  | QR Code | QR code Generated from Invoice Information | inside console/ log |
+| Output         | Description                     | Location     |
+|----------------|----------------------------------|--------------|
+| Invoice Hash   | Hash of the invoice              | Console/Log  |
+| QR Code        | Generated QR code                | Console/Log  |
+| Signed XML     | Final signed invoice XML         | Output path  |
 
-    - ### submit:
+---
 
-        - args:
+### `generate-qr`
 
-            - | Arg Name | Value | Example |
-                              | --- | --- | --- |
-              | signed-xml-path | E-Invoice Signed XML file Path Compliance with UBL 2.1 | /home/orgs/sdk/signed_invoice.xml |
-              | production-certificate-response-path | json file response from previous steps Encrypted | /home/orgs/sdk/output/production_response.json |
-              | output-path | output path (Where the response should be written) | /home/orgs/sdk/output/submit_response.json |
+**Args**
 
-            - output:
+| Arg Name         | Description                                      | Example                              |
+|------------------|--------------------------------------------------|--------------------------------------|
+| xml-path         | Path to E-Invoice XML (UBL 2.1)                  | `/home/orgs/sdk/invoice.xml`         |
+| private-key-path | Encrypted private key path                       | `/home/orgs/sdk/output/private.pem`  |
+| certificate-path | Encrypted certificate path                       | `/home/orgs/sdk/output/production_csid.cert` |
 
-                - | output Name | Value | location |
-                                      | --- | --- | --- |
-                  | Response | Response from fotara | inside console/ log |
-                  | file response | json file written contain the response from fotara | inside output path |
+**Output**
 
-    - ### decrypt:
+| Output         | Description                     | Location     |
+|----------------|----------------------------------|--------------|
+| Invoice Hash   | Hash of the invoice              | Console/Log  |
+| QR Code        | Generated QR code                | Console/Log  |
 
-        - args:
+---
 
-            - | Arg Name | Value | Example |
-                              | --- | --- | --- |
-              | encrypted-file-path | Encrypted filed generated by the sdk | /home/orgs/sdk/private.pem |
+### `submit`
 
-            - output:
+**Args**
 
-                - | output Name | Value | location |
-                                      | --- | --- | --- |
-                  | decrypted file | Decrypted file plain text will be shown on the logs/ console only | inside console/ log |
+| Arg Name                             | Description                             | Example                                    |
+|--------------------------------------|-----------------------------------------|--------------------------------------------|
+| signed-xml-path                      | Path to signed XML                      | `/home/orgs/sdk/signed_invoice.xml`        |
+| production-certificate-response-path| Encrypted response file from onboarding | `/home/orgs/sdk/output/production_response.json` |
+| output-path                          | Path to write the submission response   | `/home/orgs/sdk/output/submit_response.json`     |
+
+**Output**
+
+| Output         | Description                     | Location     |
+|----------------|----------------------------------|--------------|
+| Response       | Console response from Fotara     | Console/Log  |
+| file response  | JSON response written to file    | Output path  |
+
+---
+
+### `decrypt`
+
+**Args**
+
+| Arg Name             | Description                             | Example                            |
+|----------------------|-----------------------------------------|------------------------------------|
+| encrypted-file-path  | Encrypted file to be decrypted          | `/home/orgs/sdk/private.pem`       |
+
+**Output**
+
+| Output         | Description                             | Location     |
+|----------------|------------------------------------------|--------------|
+| decrypted file | Plain text output of the file            | Console/Log  |
