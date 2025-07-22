@@ -10,6 +10,7 @@ public class CsrConfigDto {
     private String invoiceType;
     private String location;
     private String industry;
+    private String email;
 
     public String getCommonName() {
         return commonName;
@@ -81,5 +82,13 @@ public class CsrConfigDto {
 
     public void setIndustry(String industry) {
         this.industry = industry;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
