@@ -156,8 +156,11 @@ public class CsrKeysProcessor extends ActionProcessor {
             String certificateTemplateName=propertiesManager.getProperty("fotara.certificate.template");
             X500Name x500 = buildX500SubjectBlock();
             X500Name x500OtherAttributes = buildX500AttributesBlock();
+
             Extension subjectAltName = new Extension(MicrosoftObjectIdentifiers.microsoftCertTemplateV1, false,
                     new DEROctetString(new DisplayText(2, certificateTemplateName)));
+
+
             GeneralName[] generalNamesArray = {new GeneralName(x500OtherAttributes)};
             GeneralNames generalNames = new GeneralNames(generalNamesArray);
             ContentSigner signGen = (new JcaContentSignerBuilder("SHA256WITHECDSA")).build(privateKey);
@@ -178,10 +181,7 @@ public class CsrKeysProcessor extends ActionProcessor {
     }
     private X500Name buildX500SubjectBlock() {
         final X500NameBuilder subject = new X500NameBuilder();
-        subject.addRDN(BCStyle.C, csrConfigDto.getCountryName());
-        subject.addRDN(BCStyle.OU, csrConfigDto.getOrganizationUnitName());
-        subject.addRDN(BCStyle.O, csrConfigDto.getOrganizationName());
-        subject.addRDN(BCStyle.CN, csrConfigDto.getCommonName());
+        subject.addRDN(Extension.subjectAlternativeName, csrConfigDto.getEmail());
         return subject.build();
     }
 
