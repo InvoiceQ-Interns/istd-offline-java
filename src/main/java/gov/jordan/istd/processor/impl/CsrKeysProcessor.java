@@ -111,6 +111,10 @@ public class CsrKeysProcessor extends ActionProcessor {
             log.info(String.format("Industry is missing in config file [%s]", configFilePath));
             isValid=false;
         }
+        if(StringUtils.isBlank(csrConfigDto.getEmail())){
+            log.info(String.format("Email is missing in config file [%s]", configFilePath));
+            isValid=false;
+        }
         if(isValid && StringUtils.split(csrConfigDto.getSerialNumber(),"|").length!=3){
             log.info(String.format("Serial number [%s] is invalid, format [TAX_NUMBER|SEQ_NUMBER|DEVICE_ID]", csrConfigDto.getSerialNumber()));
             isValid = false;
@@ -143,6 +147,9 @@ public class CsrKeysProcessor extends ActionProcessor {
         String publicKeyFile = outputDirectory + "/public.pem";
         String csrFile = outputDirectory + "/csr.pem";
         String csrEncodedFile = outputDirectory + "/csr.encoded";
+
+        
+
         boolean valid= WriterHelper.writeFile(privateKeyFile, SecurityUtils.encrypt(privateKeyPEM));
         valid= WriterHelper.writeFile(publicKeyFile,SecurityUtils.encrypt(publicKeyPEM)) && valid;
         valid= WriterHelper.writeFile(csrFile,SecurityUtils.encrypt(csrPem)) && valid;
@@ -181,7 +188,7 @@ public class CsrKeysProcessor extends ActionProcessor {
     }
     private X500Name buildX500SubjectBlock() {
         final X500NameBuilder subject = new X500NameBuilder();
-        subject.addRDN(Extension.subjectAlternativeName, csrConfigDto.getEmail());
+        subject.addRDN(BCStyle.EmailAddress, csrConfigDto.getEmail());
         return subject.build();
     }
 

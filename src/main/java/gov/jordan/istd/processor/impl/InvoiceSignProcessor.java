@@ -36,16 +36,16 @@ public class InvoiceSignProcessor extends ActionProcessor {
         return true;
     }
 
-    @Override
-    protected boolean validateArgs() {
-        if(StringUtils.isBlank(outputFile)){
-            log.info("Invalid output path");
-            return false;
+        @Override
+        protected boolean validateArgs() {
+            if(StringUtils.isBlank(outputFile)){
+                log.info("Invalid output path");
+                return false;
+            }
+            if (!readXmlFile()) return false;
+            if (!readPrivateKey()) return false;
+            return readCertificate();
         }
-        if (!readXmlFile()) return false;
-        if (!readPrivateKey()) return false;
-        return readCertificate();
-    }
 
     @Override
     protected boolean process() {

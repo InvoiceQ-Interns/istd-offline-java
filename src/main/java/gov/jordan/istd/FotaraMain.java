@@ -11,7 +11,12 @@ import java.util.Objects;
 
 public class FotaraMain {
     private final Logger logger=Logger.getLogger("FotaraMain");
+
+
     public static void main(String[] args) {
+
+
+
         FotaraMain fotaraMain=new FotaraMain();
         fotaraMain.execute(args);
     }

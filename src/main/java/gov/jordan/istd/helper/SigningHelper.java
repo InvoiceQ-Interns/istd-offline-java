@@ -191,6 +191,12 @@ public class SigningHelper {
         String vatTotal = getNodeXmlTextValue(document, nameSpacesMap, "/Invoice/cac:TaxTotal/cbc:TaxAmount");
         String issueDate = getNodeXmlTextValue(document, nameSpacesMap, "/Invoice/cbc:IssueDate");
         String issueTime = getNodeXmlTextValue(document, nameSpacesMap, "/Invoice/cbc:IssueTime");
+
+        if (issueTime == null) {
+            issueTime = "00:00:00";
+            log.warn("IssueTime element missing from invoice, using default time: " + issueTime);
+        }
+
         if (issueTime.endsWith("Z")) {
             issueTime = issueTime.replace("Z", "");
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -214,7 +220,12 @@ public class SigningHelper {
     private String getNodeXmlTextValue(Document document, Map<String, String> nameSpaces, String attributeXpath) {
         XPath xpath = DocumentHelper.createXPath(attributeXpath);
         xpath.setNamespaceURIs(nameSpaces);
-        return xpath.selectSingleNode(document).getText();
+        Node node = xpath.selectSingleNode(document);
+        if (node == null) {
+            log.warn("XML node not found for path: " + attributeXpath);
+            return null;
+        }
+        return node.getText();
     }
 
     public String readUUID(String xmlDocument) throws Exception {

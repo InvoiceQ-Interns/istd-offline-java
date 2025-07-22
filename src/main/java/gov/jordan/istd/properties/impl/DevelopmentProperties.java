@@ -18,7 +18,8 @@ public class DevelopmentProperties implements PropertiesManager {
         data.put("fotara.api.url.prod.certificate","http://localhost:5212/v1/prod/certificate");
         data.put("fotara.api.url.prod.invoice","http://localhost:5212/v1/prod/clear/invoice");
         data.put("fotara.api.url.prod.report.invoice","http://localhost:5212/v1/prod/report/invoice");
-        data.put("fotara.certificate.template","DEV_TEMP");
+        // data.put("fotara.certificate.template","DEV_TEMP");
+        data.put("fotara.certificate.template","NQCSignature");
     }
 
     public static synchronized PropertiesManager getInstance() {

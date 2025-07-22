@@ -26,6 +26,7 @@ public class HashingHelper {
         StreamResult xmlOutput = new StreamResult(byteArrayOutputStream);
         StringReader stringReader = new StringReader(xmlDocument);
         StreamSource streamSource = new StreamSource(stringReader);
+
         transformer.transform(streamSource, xmlOutput);
 
         String canonicalizedXml = canonicalizeXml(byteArrayOutputStream.toByteArray());

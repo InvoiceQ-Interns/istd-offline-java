@@ -152,6 +152,7 @@ public class OnboardProcessor extends ActionProcessor {
         while (!testQueue.isEmpty()) {
             String xml=testQueue.poll();
             EInvoiceSigningResults signingResults=signingHelper.signEInvoice(xml,privateKey,complianceCertificateStr);
+
             String jsonBody= requesterGeneratorHelper.generateEInvoiceRequest(signingResults.getInvoiceHash(),signingResults.getInvoiceUUID(),signingResults.getSignedXml());
             ComplianceInvoiceResponse complianceInvoiceResponse=client.complianceInvoice(complianceCsrResponse,jsonBody);
             if(Objects.isNull(complianceInvoiceResponse) || BooleanUtils.isNotTrue(complianceInvoiceResponse.isValid())){

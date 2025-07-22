@@ -10,6 +10,7 @@ public class PropertiesFactory {
     private static final Logger logger=Logger.getLogger("PropertiesFactory");
     public static PropertiesManager getPropertiesManager() {
         String env = System.getProperty("env");
+        env = "dev";
         if(StringUtils.isBlank(env)){
             logger.error("env param is missing, please provide env param, -Denv=${env} with allowed values [dev,sim,prod]");
             return null;
