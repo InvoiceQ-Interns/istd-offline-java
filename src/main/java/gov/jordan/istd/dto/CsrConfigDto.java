@@ -1,23 +1,23 @@
 package gov.jordan.istd.dto;
 
 public class CsrConfigDto {
-    private String commonName;
+    private String enName;
     private String serialNumber;
-    private String organizationIdentifier;
-    private String organizationUnitName;
-    private String organizationName;
-    private String countryName;
-    private String invoiceType;
-    private String location;
-    private String industry;
-    private String email;
+    private String keyPassword;
 
-    public String getCommonName() {
-        return commonName;
+    private int keySize = 2048;
+    private String templateOid;
+    private int majorVersion = 1;
+    private int minorVersion = 0;
+
+    public CsrConfigDto() {}
+
+    public String getEnName() {
+        return enName;
     }
 
-    public void setCommonName(String commonName) {
-        this.commonName = commonName;
+    public void setEnName(String enName) {
+        this.enName = enName;
     }
 
     public String getSerialNumber() {
@@ -28,67 +28,58 @@ public class CsrConfigDto {
         this.serialNumber = serialNumber;
     }
 
-    public String getOrganizationIdentifier() {
-        return organizationIdentifier;
+    public String getKeyPassword() {
+        return keyPassword;
     }
 
-    public void setOrganizationIdentifier(String organizationIdentifier) {
-        this.organizationIdentifier = organizationIdentifier;
+    public void setKeyPassword(String keyPassword) {
+        this.keyPassword = keyPassword;
     }
 
-    public String getOrganizationUnitName() {
-        return organizationUnitName;
+    public int getKeySize() {
+        return keySize;
     }
 
-    public void setOrganizationUnitName(String organizationUnitName) {
-        this.organizationUnitName = organizationUnitName;
+    public void setKeySize(int keySize) {
+        this.keySize = keySize;
     }
 
-    public String getOrganizationName() {
-        return organizationName;
+    public String getTemplateOid() {
+        return templateOid;
     }
 
-    public void setOrganizationName(String organizationName) {
-        this.organizationName = organizationName;
+    public void setTemplateOid(String templateOid) {
+        this.templateOid = templateOid;
     }
 
-    public String getCountryName() {
-        return countryName;
+    public int getMajorVersion() {
+        return majorVersion;
     }
 
-    public void setCountryName(String countryName) {
-        this.countryName = countryName;
+    public void setMajorVersion(int majorVersion) {
+        this.majorVersion = majorVersion;
     }
 
-    public String getInvoiceType() {
-        return invoiceType;
+    public int getMinorVersion() {
+        return minorVersion;
     }
 
-    public void setInvoiceType(String invoiceType) {
-        this.invoiceType = invoiceType;
+    public void setMinorVersion(int minorVersion) {
+        this.minorVersion = minorVersion;
     }
 
-    public String getLocation() {
-        return location;
+    public String getPassword() {
+        return keyPassword;
     }
 
-    public void setLocation(String location) {
-        this.location = location;
-    }
 
-    public String getIndustry() {
-        return industry;
-    }
+    public String getSubjectDn() {
+        if (enName == null || enName.trim().isEmpty() ||
+            serialNumber == null || serialNumber.trim().isEmpty()) {
+            return null;
+        }
 
-    public void setIndustry(String industry) {
-        this.industry = industry;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
+        return String.format("CN=%s, O=Government of Jordan, OU=eID, SerialNumber=%s, C=JO",
+                           enName.trim(), serialNumber.trim());
     }
 }

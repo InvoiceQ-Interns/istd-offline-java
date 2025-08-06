@@ -47,6 +47,7 @@ public class SigningHelper {
     public EInvoiceSigningResults signEInvoice(String xmlDocument, PrivateKey privateKey, String certificateAsString) {
         try {
             String invoiceHash = hashingHelper.getInvoiceHash(xmlDocument, appResources);
+            System.out.println( "Invoice Hash: " + invoiceHash);
             Security.addProvider(new BouncyCastleProvider());
             certificateAsString = certificateAsString.replace("-----BEGIN CERTIFICATE-----", "").replace("-----END CERTIFICATE-----", "").replace("\n", "").replace("\r", "");
             byte[] certificateBytes = certificateAsString.getBytes(StandardCharsets.UTF_8);
@@ -57,6 +58,7 @@ public class SigningHelper {
             CertificateFactory certificatefactory = CertificateFactory.getInstance("X.509");
             X509Certificate certificate = (X509Certificate) certificatefactory.generateCertificate(byteArrayInputStream);
             DigitalSignature digitalSignature = digitalSignatureHelper.getDigitalSignature(privateKey, invoiceHash);
+            System.out.println("Digital Signature: " + digitalSignature.getDigitalSignature());
             xmlDocument = transformXML(xmlDocument);
             Document document = getXmlDocument(xmlDocument);
             Map<String, String> nameSpacesMap = getNameSpacesMap();
@@ -210,6 +212,9 @@ public class SigningHelper {
             LocalDateTime dateTimeFormat = LocalDateTime.parse(stringDateTime);
             timeStamp = dateTimeFormatter.format(dateTimeFormat);
         }
+
+        log.info("Final Timestamp: [" + timeStamp + "]");
+
         String qrCode = qrGeneratorHelper.generateQrCode(sellerName, vatRegistrationNumber, timeStamp, invoiceTotal, vatTotal, hashedXml, certificate
                 .getPublicKey().getEncoded(), signature, certificate
                 .getSignature());

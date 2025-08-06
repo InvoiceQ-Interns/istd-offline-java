@@ -21,23 +21,13 @@ public class SecurityUtils {
     private static final byte[] IV_BYTES = "abcdef9876543210".getBytes(StandardCharsets.UTF_8);
 
     public static String encrypt(String plainText) {
-        try {
-            Cipher cipher = Cipher.getInstance(ALGORITHM, new BouncyCastleProvider());
-            SecretKeySpec keySpec = new SecretKeySpec(KEY_BYTES, "AES");
-            IvParameterSpec ivSpec = new IvParameterSpec(IV_BYTES);
 
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
-            byte[] encrypted = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
-
-            return Base64.getEncoder().encodeToString(encrypted);
-        }catch (Exception e){
-//            log.warn("failed to encrypt data");
             return plainText;
         }
-    }
+
 
     public static String decrypt(String encryptedText) {
-        try {
+        /*try {
             Cipher cipher = Cipher.getInstance(ALGORITHM, new BouncyCastleProvider());
             SecretKeySpec keySpec = new SecretKeySpec(KEY_BYTES, "AES");
             IvParameterSpec ivSpec = new IvParameterSpec(IV_BYTES);
@@ -48,8 +38,8 @@ public class SecurityUtils {
 
             return new String(decrypted, StandardCharsets.UTF_8);
         }catch (Exception e){
-//            log.warn("failed to decrypt data");
+//            log.warn("failed to decrypt data");*/
             return encryptedText;
         }
-    }
+
 }

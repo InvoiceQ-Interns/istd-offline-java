@@ -17,7 +17,7 @@ public class InputResolver {
                 return new OnboardProcessor();
             case "validate":
                 return new InvoiceValidationProcessor();
-            case "sign":
+            case "invoice-sign":
                 return new InvoiceSignProcessor();
             case "generate-qr":
                 return new QrGeneratorProcessor();

@@ -1,56 +1,51 @@
 package gov.jordan.istd.processor.impl;
 
 import gov.jordan.istd.dto.CsrConfigDto;
+import gov.jordan.istd.dto.CsrResponseDto;
 import gov.jordan.istd.io.ReaderHelper;
 import gov.jordan.istd.io.WriterHelper;
 import gov.jordan.istd.processor.ActionProcessor;
 import gov.jordan.istd.security.SecurityUtils;
-import gov.jordan.istd.utils.ECDSAUtil;
+import gov.jordan.istd.helper.CmsRequestHelper;
 import gov.jordan.istd.utils.JsonUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.asn1.DEROctetString;
-import org.bouncycastle.asn1.microsoft.MicrosoftObjectIdentifiers;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.X500NameBuilder;
-import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.asn1.x500.style.RFC4519Style;
-import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.openssl.PEMWriter;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.pkcs.PKCS10CertificationRequest;
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
 
 import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.Base64;
 import java.util.Objects;
 
+import static gov.jordan.istd.utils.pemConversionAndStringUtils.cleanCsrString;
+
 public class CsrKeysProcessor extends ActionProcessor {
 
-    private String outputDirectory="";
-    private String configFilePath="";
-    private PublicKey publicKey;
-    private PrivateKey privateKey;
+    private String outputDirectory = "";
+    private String configFilePath = "";
     private CsrConfigDto csrConfigDto;
-    private String csrEncoded;
-    private String privateKeyPEM;
-    private String publicKeyPEM;
+    private CsrResponseDto csrResponse;
     private String csrPem;
+    private String csrDerBase64;
+    private String encryptedPrivateKeyBase64;
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length != 2) {
-            log.info("Usage: java -jar fotara-sdk.jar generate-csr-keys <directory> <config-file>");
+        if (args.length != 5) {
+            log.info("Usage: java -jar fotara-sdk.jar generate-csr-keys <directory> <en-name> <serial-number> <key-password> <config-file>");
+
             return false;
         }
         outputDirectory = args[0];
-        configFilePath = args[1];
+        String enName = args[1];
+        String serialNumber = args[2];
+        String keyPassword = args[3];
+        configFilePath = args[4];
+
+        csrConfigDto = new CsrConfigDto();
+        csrConfigDto.setEnName(enName);
+        csrConfigDto.setSerialNumber(serialNumber);
+        csrConfigDto.setKeyPassword(keyPassword);
+
         return true;
     }
 
@@ -60,172 +55,139 @@ public class CsrKeysProcessor extends ActionProcessor {
             log.info(String.format("Output directory [%s] does not exist", outputDirectory));
             return false;
         }
+
         if (StringUtils.isBlank(configFilePath)) {
-            log.info(String.format("Config file [%s] does not exist", configFilePath));
+            log.info("Config file path is required");
             return false;
         }
+
         String configFile = ReaderHelper.readFileAsString(configFilePath);
-        if(StringUtils.isBlank(configFile)){
+        if (StringUtils.isBlank(configFile)) {
             log.info(String.format("Config file [%s] is empty", configFilePath));
             return false;
         }
-        csrConfigDto= JsonUtils.readJson(configFile,CsrConfigDto.class);
-        if(Objects.isNull(csrConfigDto)){
+
+        CsrConfigDto configFromFile = JsonUtils.readJson(configFile, CsrConfigDto.class);
+        if (Objects.isNull(configFromFile)) {
             log.info(String.format("Config file [%s] is invalid", configFilePath));
             return false;
         }
-        boolean isValid=true;
-        if(StringUtils.isBlank(csrConfigDto.getCommonName())){
-            log.info(String.format("Common name is missing in config file [%s]", configFilePath));
-            isValid=false;
+
+        if (configFromFile.getKeySize() > 0) {
+            csrConfigDto.setKeySize(configFromFile.getKeySize());
         }
-        if(StringUtils.isBlank(csrConfigDto.getSerialNumber())){
-            log.info(String.format("Serial number is missing in config file [%s]", configFilePath));
-            isValid=false;
+        if (StringUtils.isNotBlank(configFromFile.getTemplateOid())) {
+            csrConfigDto.setTemplateOid(configFromFile.getTemplateOid());
         }
-        if(StringUtils.isBlank(csrConfigDto.getOrganizationIdentifier())){
-            log.info(String.format("Organization identifier is missing in config file [%s]", configFilePath));
-            isValid=false;
+        if (configFromFile.getMajorVersion() > 0) {
+            csrConfigDto.setMajorVersion(configFromFile.getMajorVersion());
         }
-        if(StringUtils.isBlank(csrConfigDto.getOrganizationUnitName())){
-            log.info(String.format("Organization unit name is missing in config file [%s]", configFilePath));
-            isValid=false;
+        if (configFromFile.getMinorVersion() >= 0) {
+            csrConfigDto.setMinorVersion(configFromFile.getMinorVersion());
         }
-        if(StringUtils.isBlank(csrConfigDto.getOrganizationName())){
-            log.info(String.format("Organization name is missing in config file [%s]", configFilePath));
-            isValid=false;
+
+        return validateCsrConfig();
+    }
+
+    private boolean validateCsrConfig() {
+        if (StringUtils.isBlank(csrConfigDto.getEnName())) {
+            log.info("Please enter a valid Name.");
+            return false;
         }
-        if(StringUtils.isBlank(csrConfigDto.getCountryName())){
-            log.info(String.format("Country name is missing in config file [%s]", configFilePath));
-            isValid=false;
+
+        if (StringUtils.isBlank(csrConfigDto.getSerialNumber())) {
+            log.info("Please enter a valid Serial Number.");
+            return false;
         }
-        if(StringUtils.isBlank(csrConfigDto.getInvoiceType())){
-            log.info(String.format("Invoice type is missing in config file [%s]", configFilePath));
-            isValid=false;
+
+        if (StringUtils.isBlank(csrConfigDto.getKeyPassword())) {
+            log.info("Please enter a password for the private key.");
+            return false;
         }
-        if(StringUtils.isBlank(csrConfigDto.getLocation())){
-            log.info(String.format("Location is missing in config file [%s]", configFilePath));
-            isValid=false;
+
+        if (csrConfigDto.getKeySize() < 1024) {
+            log.info("Key size must be at least 1024 bits");
+            return false;
         }
-        if(StringUtils.isBlank(csrConfigDto.getIndustry())){
-            log.info(String.format("Industry is missing in config file [%s]", configFilePath));
-            isValid=false;
-        }
-        if(StringUtils.isBlank(csrConfigDto.getEmail())){
-            log.info(String.format("Email is missing in config file [%s]", configFilePath));
-            isValid=false;
-        }
-        if(isValid && StringUtils.split(csrConfigDto.getSerialNumber(),"|").length!=3){
-            log.info(String.format("Serial number [%s] is invalid, format [TAX_NUMBER|SEQ_NUMBER|DEVICE_ID]", csrConfigDto.getSerialNumber()));
-            isValid = false;
-        }
-        if(isValid && (csrConfigDto.getInvoiceType().length()!=4 || !csrConfigDto.getInvoiceType().matches("[01]+"))){
-            log.info(String.format("Invoice type [%s] is invalid, format [4-digit-number (0/1)]", csrConfigDto.getInvoiceType()));
-            isValid=false;
-        }
-        return isValid;
+
+        return true;
     }
 
     @Override
     protected boolean process() {
-        if (!generateKeyPairs() || Objects.isNull(publicKey) || Objects.isNull(privateKey)){
-            log.error("Failed to generate CSR keys");
+        try {
+            String subjectDn = csrConfigDto.getSubjectDn();
+            log.info(String.format("Generated DN: %s", subjectDn));
+            log.info(String.format("RSA key size: %d", csrConfigDto.getKeySize()));
+
+            if (StringUtils.isNotBlank(csrConfigDto.getTemplateOid())) {
+                log.info(String.format("Certificate template OID: %s (v%d.%d)",
+                        csrConfigDto.getTemplateOid(),
+                        csrConfigDto.getMajorVersion(),
+                        csrConfigDto.getMinorVersion()));
+            }
+
+            csrResponse = CmsRequestHelper.createCsr(csrConfigDto);
+
+            String csrBase64 = Base64.getEncoder().encodeToString(csrResponse.getCsrDer());
+
+            String cleanedCsr = cleanCsrString(csrBase64);
+
+            csrPem = convertToPem("CERTIFICATE REQUEST", csrResponse.getCsrDer());
+            csrDerBase64 = cleanedCsr;
+            encryptedPrivateKeyBase64 = Base64.getEncoder().encodeToString(csrResponse.getPrivateKeyBytes());
+
+            log.info("Successfully generated CSR and encrypted private key");
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to generate CSR", e);
             return false;
         }
-        if(!buildCsr() || StringUtils.isBlank(csrEncoded) ){
-            log.error("Failed to build CSR");
-            return false;
-        }
-        privateKeyPEM = transform("EC PRIVATE KEY", privateKey.getEncoded());
-        publicKeyPEM = transform("EC PUBLIC KEY", publicKey.getEncoded());
-        return true;
     }
+
     @Override
     protected boolean output() {
-        log.info(String.format("CSR [%s]",SecurityUtils.decrypt(csrEncoded)));
-        String privateKeyFile = outputDirectory + "/private.pem";
-        String publicKeyFile = outputDirectory + "/public.pem";
-        String csrFile = outputDirectory + "/csr.pem";
-        String csrEncodedFile = outputDirectory + "/csr.encoded";
+        String timestamp = java.time.LocalDateTime.now().format(
+            java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
 
-        
+        String commonName = extractCommonNameFromDN(csrConfigDto.getSubjectDn());
+        String baseFileName = String.format("%s_%s", commonName, timestamp);
 
-        boolean valid= WriterHelper.writeFile(privateKeyFile, SecurityUtils.encrypt(privateKeyPEM));
-        valid= WriterHelper.writeFile(publicKeyFile,SecurityUtils.encrypt(publicKeyPEM)) && valid;
-        valid= WriterHelper.writeFile(csrFile,SecurityUtils.encrypt(csrPem)) && valid;
-        valid= WriterHelper.writeFile(csrEncodedFile,SecurityUtils.encrypt(csrEncoded)) && valid;
+        String csrFile = outputDirectory + "/" + baseFileName + ".csr";
+        String keyFile = outputDirectory + "/" + baseFileName + ".key";
+        String pubKeyFile = outputDirectory + "/" + baseFileName + ".pub";
+
+        String publicKeyBase64 = Base64.getEncoder().encodeToString(csrResponse.getPublicKeyBytes());
+
+        boolean valid = WriterHelper.writeFile(csrFile, SecurityUtils.encrypt(csrDerBase64));
+        valid = WriterHelper.writeFile(keyFile, SecurityUtils.encrypt(encryptedPrivateKeyBase64)) && valid;
+        valid = WriterHelper.writeFile(pubKeyFile, SecurityUtils.encrypt(publicKeyBase64)) && valid;
+
         return valid;
     }
 
-
-    private boolean buildCsr() {
+    private String extractCommonNameFromDN(String subjectDn) {
         try {
-            String certificateTemplateName=propertiesManager.getProperty("fotara.certificate.template");
-            X500Name x500 = buildX500SubjectBlock();
-            X500Name x500OtherAttributes = buildX500AttributesBlock();
-
-            Extension subjectAltName = new Extension(MicrosoftObjectIdentifiers.microsoftCertTemplateV1, false,
-                    new DEROctetString(new DisplayText(2, certificateTemplateName)));
-
-
-            GeneralName[] generalNamesArray = {new GeneralName(x500OtherAttributes)};
-            GeneralNames generalNames = new GeneralNames(generalNamesArray);
-            ContentSigner signGen = (new JcaContentSignerBuilder("SHA256WITHECDSA")).build(privateKey);
-            JcaPKCS10CertificationRequestBuilder jcaPKCS10CertificationRequestBuilder = new JcaPKCS10CertificationRequestBuilder(x500, publicKey);
-            jcaPKCS10CertificationRequestBuilder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest,
-                            new Extensions(new Extension[]{subjectAltName, Extension.create(Extension.subjectAlternativeName, false, generalNames)}))
-                    .build(signGen);
-            PKCS10CertificationRequest certRequest = jcaPKCS10CertificationRequestBuilder.build(signGen);
-            csrPem = transform("CERTIFICATE REQUEST", certRequest.getEncoded());
-            assert csrPem != null;
-            csrEncoded = new String(Base64.getEncoder().encode(csrPem.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
-        }catch (Exception e){
-            log.error("Failed to build CSR ",e);
-            return false;
-        }
-        return true;
-
-    }
-    private X500Name buildX500SubjectBlock() {
-        final X500NameBuilder subject = new X500NameBuilder();
-        subject.addRDN(BCStyle.EmailAddress, csrConfigDto.getEmail());
-        return subject.build();
-    }
-
-    private X500Name buildX500AttributesBlock() {
-        final X500NameBuilder x500NameBuilderOtherAttributes = new X500NameBuilder();
-        x500NameBuilderOtherAttributes.addRDN(RFC4519Style.sn, csrConfigDto.getSerialNumber());
-        x500NameBuilderOtherAttributes.addRDN(BCStyle.UID, csrConfigDto.getOrganizationIdentifier());
-        x500NameBuilderOtherAttributes.addRDN(RFC4519Style.title, csrConfigDto.getInvoiceType());
-        x500NameBuilderOtherAttributes.addRDN(RFC4519Style.registeredAddress, csrConfigDto.getLocation());
-        x500NameBuilderOtherAttributes.addRDN(RFC4519Style.businessCategory, csrConfigDto.getIndustry());
-        return x500NameBuilderOtherAttributes.build();
-    }
-
-    private String transform(final String type, final byte[] certificateRequest) {
-        try {
-            final PemObject pemObject = new PemObject(type, certificateRequest);
-            final StringWriter stringWriter = new StringWriter();
-            final PEMWriter pemWriter = new PEMWriter(stringWriter);
-            pemWriter.writeObject(pemObject);
-            pemWriter.close();
-            stringWriter.close();
-            return stringWriter.toString();
+            String[] parts = subjectDn.split(",");
+            for (String part : parts) {
+                String trimmed = part.trim();
+                if (trimmed.toUpperCase().startsWith("CN=")) {
+                    return trimmed.substring(3).trim().replaceAll("[^a-zA-Z0-9_-]", "_");
+                }
+            }
+            return "CSR";
         } catch (Exception e) {
-            log.error("something went wrong", e);
-            return null;
+            return "CSR";
         }
-    }
-    private boolean generateKeyPairs() {
-        try {
-            KeyPair pair = ECDSAUtil.getKeyPair();
-            publicKey = pair.getPublic();
-            privateKey = pair.getPrivate();
-        }catch (Exception e){
-            log.error("Failed to generate CSR keys",e);
-            return false;
-        }
-        return true;
     }
 
+    private String convertToPem(String type, byte[] derBytes) throws Exception {
+        PemObject pemObject = new PemObject(type, derBytes);
+        StringWriter stringWriter = new StringWriter();
+        PEMWriter pemWriter = new PEMWriter(stringWriter);
+        pemWriter.writeObject(pemObject);
+        pemWriter.close();
+        return stringWriter.toString();
+    }
 }

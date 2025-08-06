@@ -11,12 +11,20 @@ import gov.jordan.istd.io.ReaderHelper;
 import gov.jordan.istd.io.WriterHelper;
 import gov.jordan.istd.processor.ActionProcessor;
 import gov.jordan.istd.security.SecurityUtils;
-import gov.jordan.istd.utils.ECDSAUtil;
 import gov.jordan.istd.utils.JsonUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
+import org.bouncycastle.operator.InputDecryptorProvider;
+import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
+
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -41,35 +49,84 @@ public class OnboardProcessor extends ActionProcessor {
     private final SigningHelper signingHelper=new SigningHelper();
     private final RequesterGeneratorHelper requesterGeneratorHelper=new RequesterGeneratorHelper();
     private FotaraClient client;
+
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length != 3) {
-            log.info("Usage: java -jar fotara-sdk.jar onboard <otp> <output-directory> <config-path>");
+        if (args.length != 6) {
+            log.info("Usage: java -jar fotara-sdk.jar onboard <otp> <output-directory> <en-name> <serial-number> <key-password> <config-file>");
             return false;
         }
-        if(StringUtils.isBlank(args[0]) ||  args[0].matches("\\d{6}")){
-            log.info("Invalid otp");
+        if(StringUtils.isBlank(args[0]) || !args[0].matches("\\d{6}")){
+            log.info("Invalid otp - must be 6 digits");
             return false;
         }
         otp = args[0];
         outputDirectory = args[1];
-        configFilePath = args[2];
-        client= new FotaraClient(propertiesManager);
+        String enName = args[2];
+        String serialNumber = args[3];
+        String keyPassword = args[4];
+        configFilePath = args[5];
+
+        csrConfigDto = new CsrConfigDto();
+        csrConfigDto.setEnName(enName);
+        csrConfigDto.setSerialNumber(serialNumber);
+        csrConfigDto.setKeyPassword(keyPassword);
+
+        client = new FotaraClient(propertiesManager);
         return true;
     }
 
     @Override
     protected boolean validateArgs() {
+        if (!ReaderHelper.isDirectoryExists(outputDirectory)) {
+            log.info(String.format("Output directory [%s] does not exist", outputDirectory));
+            return false;
+        }
+
+        if (StringUtils.isBlank(configFilePath)) {
+            log.info("Config file path is required");
+            return false;
+        }
+
+        String configFile = ReaderHelper.readFileAsString(configFilePath);
+        if (StringUtils.isBlank(configFile)) {
+            log.info(String.format("Config file [%s] is empty", configFilePath));
+            return false;
+        }
+
+        CsrConfigDto configFromFile = JsonUtils.readJson(configFile, CsrConfigDto.class);
+        if (Objects.isNull(configFromFile)) {
+            log.info(String.format("Config file [%s] is invalid", configFilePath));
+            return false;
+        }
+
+        if (configFromFile.getKeySize() > 0) {
+            csrConfigDto.setKeySize(configFromFile.getKeySize());
+        }
+        if (StringUtils.isNotBlank(configFromFile.getTemplateOid())) {
+            csrConfigDto.setTemplateOid(configFromFile.getTemplateOid());
+        }
+        if (configFromFile.getMajorVersion() > 0) {
+            csrConfigDto.setMajorVersion(configFromFile.getMajorVersion());
+        }
+        if (configFromFile.getMinorVersion() >= 0) {
+            csrConfigDto.setMinorVersion(configFromFile.getMinorVersion());
+        }
+
         return true;
     }
 
     @Override
     protected boolean process() {
         CsrKeysProcessor csrKeysProcessor = new CsrKeysProcessor();
-        boolean isValid = csrKeysProcessor.process(new String[]{outputDirectory, configFilePath}, propertiesManager);
+        String[] csrArgs = {outputDirectory, csrConfigDto.getEnName(), csrConfigDto.getSerialNumber(),
+                           csrConfigDto.getKeyPassword(), configFilePath};
+        boolean isValid = csrKeysProcessor.process(csrArgs, propertiesManager);
         if (!isValid) {
+            log.error("Failed to generate CSR and keys");
             return false;
         }
+
         if(!loadPrivateKey()){
             log.info("Failed to load private key");
             return false;
@@ -114,12 +171,26 @@ public class OnboardProcessor extends ActionProcessor {
 
     private boolean loadCsrConfigs() {
         try {
-            csrEncoded = SecurityUtils.decrypt(ReaderHelper.readFileAsString(outputDirectory + "/csr.encoded"));
-            csrConfigDto = JsonUtils.readJson(ReaderHelper.readFileAsString(configFilePath), CsrConfigDto.class);
-            assert csrConfigDto != null;
+            String timestamp = findLatestTimestamp();
+            if (timestamp == null) {
+                log.error("No CSR files found in output directory");
+                return false;
+            }
+
+            String commonName = extractCommonNameFromDN(csrConfigDto.getSubjectDn());
+            String baseFileName = String.format("%s_%s", commonName, timestamp);
+            String csrFile = outputDirectory + "/" + baseFileName + ".csr";
+
+            csrEncoded = SecurityUtils.decrypt(ReaderHelper.readFileAsString(csrFile));
+
             String[] serialNumberParts = StringUtils.split(csrConfigDto.getSerialNumber(), "|");
-            deviceId = serialNumberParts[2];
-            taxPayerNumber = serialNumberParts[0];
+            if (serialNumberParts.length >= 3) {
+                deviceId = serialNumberParts[2];
+                taxPayerNumber = serialNumberParts[0];
+            } else {
+                deviceId = "1";
+                taxPayerNumber = csrConfigDto.getSerialNumber();
+            }
         }catch (Exception e){
             log.error("Failed to load CSR configs",e);
             return false;
@@ -129,11 +200,34 @@ public class OnboardProcessor extends ActionProcessor {
 
     private boolean loadPrivateKey() {
         try {
-            String privateKeyPEM = ReaderHelper.readFileAsString(outputDirectory + "/private.pem");
-            assert privateKeyPEM != null;
-            privateKeyPEM= SecurityUtils.decrypt(privateKeyPEM);
-            String key=privateKeyPEM.replace("-----BEGIN EC PRIVATE KEY-----", "").replaceAll(System.lineSeparator(), "").replace("-----END EC PRIVATE KEY-----", "");
-            privateKey= ECDSAUtil.getPrivateKey(key);
+            String timestamp = findLatestTimestamp();
+            if (timestamp == null) {
+                log.error("No private key files found in output directory");
+                return false;
+            }
+
+            String commonName = extractCommonNameFromDN(csrConfigDto.getSubjectDn());
+            String baseFileName = String.format("%s_%s", commonName, timestamp);
+            String keyFile = outputDirectory + "/" + baseFileName + ".key";
+
+            String privateKeyBase64 = SecurityUtils.decrypt(ReaderHelper.readFileAsString(keyFile));
+            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
+
+            try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyBytes, StandardCharsets.UTF_8)))) {
+                Object object = pemParser.readObject();
+                JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+
+                if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
+                    PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) object;
+                    InputDecryptorProvider decryptorProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder()
+                            .build(csrConfigDto.getKeyPassword().toCharArray());
+                    privateKey = converter.getPrivateKey(encryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptorProvider));
+                } else {
+                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+                    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+                    privateKey = keyFactory.generatePrivate(keySpec);
+                }
+            }
         }catch (Exception e){
             log.error("Failed to load private key",e);
             return false;
@@ -177,20 +271,10 @@ public class OnboardProcessor extends ActionProcessor {
     private boolean enrichTestQueue() {
         boolean valid=false;
         try {
-            String invoiceType = csrConfigDto.getInvoiceType();
-            boolean isB2B = invoiceType.charAt(0) == '1';
-            boolean isB2C = invoiceType.charAt(1) == '1';
             int counter=0;
-            if (isB2B) {
-                testQueue.add(enrichFile(Objects.requireNonNull(ReaderHelper.readFileFromResource("samples/b2b_invoice.xml")),counter++));
-                testQueue.add(enrichFile(Objects.requireNonNull(ReaderHelper.readFileFromResource("samples/b2b_credit.xml")),counter++));
-                valid=true;
-            }
-            if(isB2C){
-                testQueue.add(enrichFile(Objects.requireNonNull(ReaderHelper.readFileFromResource("samples/b2b_invoice.xml")),counter++));
-                testQueue.add(enrichFile(Objects.requireNonNull(ReaderHelper.readFileFromResource("samples/b2b_credit.xml")),counter++));
-                valid=true;
-            }
+            testQueue.add(enrichFile(Objects.requireNonNull(ReaderHelper.readFileFromResource("samples/b2b_invoice.xml")),counter++));
+            testQueue.add(enrichFile(Objects.requireNonNull(ReaderHelper.readFileFromResource("samples/b2b_credit.xml")),counter++));
+            valid=true;
         }catch (Exception e){
             log.error("Failed to enrich test queue",e);
             return false;
@@ -209,8 +293,49 @@ public class OnboardProcessor extends ActionProcessor {
         enrichedFile = enrichedFile.replace("${ORG_ID}", orgId);
         enrichedFile = enrichedFile.replace("${ORG_UUID}", UUID.nameUUIDFromBytes(orgId.getBytes(StandardCharsets.UTF_8)).toString());
         enrichedFile = enrichedFile.replace("${VAT_NUMBER}", taxPayerNumber);
-        enrichedFile = enrichedFile.replace("${TAXPAYER_NAME}", csrConfigDto.getCommonName());
+        enrichedFile = enrichedFile.replace("${TAXPAYER_NAME}", csrConfigDto.getEnName());
         enrichedFile= enrichedFile.replace("${DEVICE_ID}", deviceId);
         return enrichedFile;
+    }
+
+    private String findLatestTimestamp() {
+        try {
+            java.io.File dir = new java.io.File(outputDirectory);
+            java.io.File[] files = dir.listFiles((d, name) -> name.endsWith(".csr") || name.endsWith(".key"));
+            if (files == null || files.length == 0) {
+                return null;
+            }
+
+            String latestTimestamp = null;
+            for (java.io.File file : files) {
+                String fileName = file.getName();
+                String[] parts = fileName.split("_");
+                if (parts.length >= 2) {
+                    String timestamp = parts[parts.length - 1].replace(".csr", "").replace(".key", "");
+                    if (latestTimestamp == null || timestamp.compareTo(latestTimestamp) > 0) {
+                        latestTimestamp = timestamp;
+                    }
+                }
+            }
+            return latestTimestamp;
+        } catch (Exception e) {
+            log.error("Failed to find latest timestamp", e);
+            return null;
+        }
+    }
+
+    private String extractCommonNameFromDN(String subjectDn) {
+        try {
+            String[] parts = subjectDn.split(",");
+            for (String part : parts) {
+                String trimmed = part.trim();
+                if (trimmed.toUpperCase().startsWith("CN=")) {
+                    return trimmed.substring(3).trim().replaceAll("[^a-zA-Z0-9_-]", "_");
+                }
+            }
+            return "CSR";
+        } catch (Exception e) {
+            return "CSR";
+        }
     }
 }

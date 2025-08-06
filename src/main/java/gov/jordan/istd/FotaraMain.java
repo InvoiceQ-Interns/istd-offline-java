@@ -31,8 +31,23 @@ public class FotaraMain {
         if(Objects.isNull(propertiesManager)){
             return;
         }
-        String[] params = new String[args.length - 1];
-        System.arraycopy(args, 1, params, 0, params.length);
+
+        // Fix the params array creation and copying
+        String[] params;
+        if (args.length > 1) {
+            params = new String[args.length - 1];
+            System.arraycopy(args, 1, params, 0, args.length - 1);
+
+            // Debug logging to verify the params array
+            logger.debug(String.format("Total args: %d, Action: %s, Params count: %d",
+                        args.length, action, params.length));
+            for (int i = 0; i < params.length; i++) {
+                logger.debug(String.format("Param[%d]: %s", i, params[i]));
+            }
+        } else {
+            params = new String[0]; // Empty array if no parameters
+        }
+
         ActionProcessor actionProcessor= InputResolver.resolve(action);
         if(Objects.isNull(actionProcessor)){
             logger.error("Invalid Action");

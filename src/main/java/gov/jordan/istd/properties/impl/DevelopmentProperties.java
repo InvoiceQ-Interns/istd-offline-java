@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 
 public class DevelopmentProperties implements PropertiesManager {
-
     private static PropertiesManager propertiesManager;
     private final Map<String,String> data=new HashMap<>();
     private DevelopmentProperties() {
