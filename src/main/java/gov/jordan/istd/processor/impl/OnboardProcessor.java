@@ -66,12 +66,12 @@ public class OnboardProcessor extends ActionProcessor {
         String serialNumber = args[3];
         String keyPassword = args[4];
         configFilePath = args[5];
-
+        
         csrConfigDto = new CsrConfigDto();
         csrConfigDto.setEnName(enName);
         csrConfigDto.setSerialNumber(serialNumber);
         csrConfigDto.setKeyPassword(keyPassword);
-
+        
         client = new FotaraClient(propertiesManager);
         return true;
     }
@@ -119,14 +119,14 @@ public class OnboardProcessor extends ActionProcessor {
     @Override
     protected boolean process() {
         CsrKeysProcessor csrKeysProcessor = new CsrKeysProcessor();
-        String[] csrArgs = {outputDirectory, csrConfigDto.getEnName(), csrConfigDto.getSerialNumber(),
+        String[] csrArgs = {outputDirectory, csrConfigDto.getEnName(), csrConfigDto.getSerialNumber(), 
                            csrConfigDto.getKeyPassword(), configFilePath};
         boolean isValid = csrKeysProcessor.process(csrArgs, propertiesManager);
         if (!isValid) {
             log.error("Failed to generate CSR and keys");
             return false;
         }
-
+        
         if(!loadPrivateKey()){
             log.info("Failed to load private key");
             return false;
@@ -176,13 +176,13 @@ public class OnboardProcessor extends ActionProcessor {
                 log.error("No CSR files found in output directory");
                 return false;
             }
-
+            
             String commonName = extractCommonNameFromDN(csrConfigDto.getSubjectDn());
             String baseFileName = String.format("%s_%s", commonName, timestamp);
             String csrFile = outputDirectory + "/" + baseFileName + ".csr";
-
+            
             csrEncoded = SecurityUtils.decrypt(ReaderHelper.readFileAsString(csrFile));
-
+            
             String[] serialNumberParts = StringUtils.split(csrConfigDto.getSerialNumber(), "|");
             if (serialNumberParts.length >= 3) {
                 deviceId = serialNumberParts[2];
@@ -205,18 +205,18 @@ public class OnboardProcessor extends ActionProcessor {
                 log.error("No private key files found in output directory");
                 return false;
             }
-
+            
             String commonName = extractCommonNameFromDN(csrConfigDto.getSubjectDn());
             String baseFileName = String.format("%s_%s", commonName, timestamp);
             String keyFile = outputDirectory + "/" + baseFileName + ".key";
-
+            
             String privateKeyBase64 = SecurityUtils.decrypt(ReaderHelper.readFileAsString(keyFile));
             byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
-
+            
             try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyBytes, StandardCharsets.UTF_8)))) {
                 Object object = pemParser.readObject();
                 JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-
+                
                 if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
                     PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) object;
                     InputDecryptorProvider decryptorProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder()

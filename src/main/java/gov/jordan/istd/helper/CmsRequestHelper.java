@@ -68,7 +68,9 @@ public class CmsRequestHelper {
         MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
         byte[] skiBytes = sha1.digest(publicKeyBytes);
 
-        extGen.addExtension(new ASN1ObjectIdentifier("2.5.29.14"), false, new DEROctetString(skiBytes));
+        // Properly encode SKI as ASN.1 OCTET STRING
+        DEROctetString skiOctetString = new DEROctetString(skiBytes);
+        extGen.addExtension(new ASN1ObjectIdentifier("2.5.29.14"), false, skiOctetString.getEncoded());
     }
 
     private static void addCertificateTemplateExtension(ExtensionsGenerator extGen, String oid,
@@ -76,7 +78,7 @@ public class CmsRequestHelper {
         byte[] templateExtension = buildCertificateTemplateExtension(oid, majorVersion, minorVersion);
 
         extGen.addExtension(new ASN1ObjectIdentifier("1.3.6.1.4.1.311.21.7"),
-                false, new DEROctetString(templateExtension));
+                false, templateExtension);
     }
 
     private static byte[] buildCertificateTemplateExtension(String oid, int majorVersion, int minorVersion) throws Exception {

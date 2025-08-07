@@ -1,14 +1,20 @@
 package gov.jordan.istd.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class CsrConfigDto {
     private String enName;
     private String serialNumber;
     private String keyPassword;
 
-    private int keySize = 2048;
+    @JsonProperty("keySize")
+    private int keySize;
+    @JsonProperty("templateOid")
     private String templateOid;
-    private int majorVersion = 1;
-    private int minorVersion = 0;
+    @JsonProperty("major")
+    private int majorVersion;
+    @JsonProperty("minor")
+    private int minorVersion;
 
     public CsrConfigDto() {}
 
