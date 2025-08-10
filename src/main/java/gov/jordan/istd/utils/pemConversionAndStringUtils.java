@@ -2,15 +2,10 @@ package gov.jordan.istd.utils;
 
 import java.util.Base64;
 
-/**
- * Java equivalent of C# OtherFunctions class
- * Provides utility methods for PEM conversion and CSR string cleaning
- */
+
 public class pemConversionAndStringUtils {
 
-    /**
-     * Convert private key bytes to PEM format (equivalent to C# ConvertPrivateKeyBytesToPem)
-     */
+
     public static String convertPrivateKeyBytesToPem(byte[] privateKeyBytes) {
         StringBuilder builder = new StringBuilder();
         builder.append("-----BEGIN ENCRYPTED PRIVATE KEY-----\n");
@@ -19,9 +14,7 @@ public class pemConversionAndStringUtils {
         return builder.toString();
     }
 
-    /**
-     * Convert certificate bytes to PEM format (equivalent to C# ConvertCertificateBytesToPem)
-     */
+
     public static String convertCertificateBytesToPem(byte[] certBytes) {
         StringBuilder builder = new StringBuilder();
         builder.append("-----BEGIN CERTIFICATE-----\n");
@@ -30,9 +23,7 @@ public class pemConversionAndStringUtils {
         return builder.toString();
     }
 
-    /**
-     * Clean CSR string by removing PEM headers and whitespace (equivalent to C# CleanCsrString)
-     */
+
     public static String cleanCsrString(String rawCsr) {
         if (rawCsr == null || rawCsr.trim().isEmpty()) {
             return "";
@@ -47,9 +38,6 @@ public class pemConversionAndStringUtils {
             .trim();
     }
 
-    /**
-     * Insert line breaks every specified number of characters (equivalent to C# Base64FormattingOptions.InsertLineBreaks)
-     */
     private static String insertLineBreaks(String input, int lineLength) {
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < input.length(); i += lineLength) {

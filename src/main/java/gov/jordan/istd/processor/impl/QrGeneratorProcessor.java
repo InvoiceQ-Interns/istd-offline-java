@@ -5,7 +5,7 @@ import gov.jordan.istd.helper.SigningHelper;
 import gov.jordan.istd.io.ReaderHelper;
 import gov.jordan.istd.processor.ActionProcessor;
 import gov.jordan.istd.security.SecurityUtils;
-import gov.jordan.istd.utils.ECDSAUtil;
+import gov.jordan.istd.utils.PrivateKeyUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.security.PrivateKey;
@@ -16,6 +16,7 @@ public class QrGeneratorProcessor extends ActionProcessor {
     private String xmlPath = "";
     private String privateKeyPath = "";
     private String certificatePath = "";
+    private String keyPassword = "";
     private PrivateKey privateKey;
     private String xmlFile;
     private String certificateStr;
@@ -23,13 +24,16 @@ public class QrGeneratorProcessor extends ActionProcessor {
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length != 3) {
-            System.out.println("Usage: java -jar fotara-sdk.jar invoice-sign <xml-path> <private-key-path> <certificate-path>");
+        if (args.length < 3 || args.length > 4) {
+            System.out.println("Usage: java -jar fotara-sdk.jar qr-generator <xml-path> <private-key-path> <certificate-path> [key-password]");
             return false;
         }
         xmlPath = args[0];
         privateKeyPath = args[1];
         certificatePath = args[2];
+        if (args.length == 4) {
+            keyPassword = args[3];
+        }
         return true;
     }
 
@@ -65,16 +69,14 @@ public class QrGeneratorProcessor extends ActionProcessor {
             return false;
         }
         try {
-            privateKeyFile= SecurityUtils.decrypt(privateKeyFile);
-            String key=privateKeyFile.replace("-----BEGIN EC PRIVATE KEY-----", "").replaceAll(System.lineSeparator(), "").replace("-----END EC PRIVATE KEY-----", "");
-            privateKey = ECDSAUtil.getPrivateKey(key);
+            privateKeyFile = SecurityUtils.decrypt(privateKeyFile);
+            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyFile, keyPassword);
         } catch (Exception e) {
-            log.info(String.format("Failed to read private key [%s]", privateKeyPath));
+            log.error(String.format("Failed to read private key [%s]", privateKeyPath), e);
             return false;
         }
         return true;
     }
-
 
     private boolean readXmlFile() {
         xmlFile = ReaderHelper.readFileAsString(xmlPath);

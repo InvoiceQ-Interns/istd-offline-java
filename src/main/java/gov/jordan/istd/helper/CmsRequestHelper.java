@@ -161,16 +161,29 @@ public class CmsRequestHelper {
     private static byte[] exportPublicKeyWithPasswordProtection(PublicKey publicKey, String password) throws Exception {
         try {
             byte[] publicKeyBytes = publicKey.getEncoded();
-
-            String publicKeyPem = "-----BEGIN RSA PUBLIC KEY-----\n" +
-                    "Proc-Type: 4,ENCRYPTED\n" +
-                    "DEK-Info: AES-256-CBC,\n" +
-                    "\n" +
-                    Base64.getEncoder().encodeToString(publicKeyBytes) + "\n" +
-                    "-----END RSA PUBLIC KEY-----\n";
-            return publicKeyPem.getBytes();
+            return convertPublicKeyToPem(publicKeyBytes);
         } catch (Exception e) {
-            throw new Exception("Failed to format public key with password protection: " + e.getMessage(), e);
+            throw new Exception("Failed to format public key: " + e.getMessage(), e);
         }
+    }
+
+    private static byte[] convertPublicKeyToPem(byte[] publicKeyDer) {
+        String base64PublicKey = Base64.getEncoder().encodeToString(publicKeyDer);
+        String pemPublicKey = "-----BEGIN PUBLIC KEY-----\n" +
+                insertLineBreaks(base64PublicKey, 64) +
+                "\n-----END PUBLIC KEY-----\n";
+        return pemPublicKey.getBytes();
+    }
+
+    private static String insertLineBreaks(String text, int lineLength) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < text.length(); i += lineLength) {
+            if (i + lineLength < text.length()) {
+                stringBuilder.append(text.substring(i, i + lineLength)).append("\n");
+            } else {
+                stringBuilder.append(text.substring(i)).append("\n");
+            }
+        }
+        return stringBuilder.toString();
     }
 }

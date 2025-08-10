@@ -12,19 +12,13 @@ import gov.jordan.istd.io.WriterHelper;
 import gov.jordan.istd.processor.ActionProcessor;
 import gov.jordan.istd.security.SecurityUtils;
 import gov.jordan.istd.utils.JsonUtils;
+import gov.jordan.istd.utils.PrivateKeyUtil;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.bouncycastle.openssl.PEMParser;
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
-import org.bouncycastle.openssl.jcajce.JceOpenSSLPKCS8DecryptorProviderBuilder;
-import org.bouncycastle.operator.InputDecryptorProvider;
-import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
 
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
 import java.security.PrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -211,25 +205,10 @@ public class OnboardProcessor extends ActionProcessor {
             String keyFile = outputDirectory + "/" + baseFileName + ".key";
             
             String privateKeyBase64 = SecurityUtils.decrypt(ReaderHelper.readFileAsString(keyFile));
-            byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyBase64);
-            
-            try (PEMParser pemParser = new PEMParser(new StringReader(new String(privateKeyBytes, StandardCharsets.UTF_8)))) {
-                Object object = pemParser.readObject();
-                JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
-                
-                if (object instanceof PKCS8EncryptedPrivateKeyInfo) {
-                    PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = (PKCS8EncryptedPrivateKeyInfo) object;
-                    InputDecryptorProvider decryptorProvider = new JceOpenSSLPKCS8DecryptorProviderBuilder()
-                            .build(csrConfigDto.getKeyPassword().toCharArray());
-                    privateKey = converter.getPrivateKey(encryptedPrivateKeyInfo.decryptPrivateKeyInfo(decryptorProvider));
-                } else {
-                    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-                    privateKey = keyFactory.generatePrivate(keySpec);
-                }
-            }
-        }catch (Exception e){
-            log.error("Failed to load private key",e);
+            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyBase64, csrConfigDto.getKeyPassword());
+
+        } catch (Exception e) {
+            log.error("Failed to load private key", e);
             return false;
         }
         return true;
