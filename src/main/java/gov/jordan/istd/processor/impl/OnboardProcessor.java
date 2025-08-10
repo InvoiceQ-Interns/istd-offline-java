@@ -46,8 +46,8 @@ public class OnboardProcessor extends ActionProcessor {
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length != 6) {
-            log.info("Usage: java -jar fotara-sdk.jar onboard <otp> <output-directory> <en-name> <serial-number> <key-password> <config-file>");
+        if (args.length != 5) {
+            log.info("Usage: java -jar fotara-sdk.jar onboard <otp> <output-directory> <en-name> <serial-number> <config-file>");
             return false;
         }
         if(StringUtils.isBlank(args[0]) || !args[0].matches("\\d{6}")){
@@ -58,14 +58,12 @@ public class OnboardProcessor extends ActionProcessor {
         outputDirectory = args[1];
         String enName = args[2];
         String serialNumber = args[3];
-        String keyPassword = args[4];
-        configFilePath = args[5];
-        
+        configFilePath = args[4];
+
         csrConfigDto = new CsrConfigDto();
         csrConfigDto.setEnName(enName);
         csrConfigDto.setSerialNumber(serialNumber);
-        csrConfigDto.setKeyPassword(keyPassword);
-        
+
         client = new FotaraClient(propertiesManager);
         return true;
     }
@@ -113,8 +111,7 @@ public class OnboardProcessor extends ActionProcessor {
     @Override
     protected boolean process() {
         CsrKeysProcessor csrKeysProcessor = new CsrKeysProcessor();
-        String[] csrArgs = {outputDirectory, csrConfigDto.getEnName(), csrConfigDto.getSerialNumber(), 
-                           csrConfigDto.getKeyPassword(), configFilePath};
+        String[] csrArgs = {outputDirectory, csrConfigDto.getEnName(), csrConfigDto.getSerialNumber(), configFilePath};
         boolean isValid = csrKeysProcessor.process(csrArgs, propertiesManager);
         if (!isValid) {
             log.error("Failed to generate CSR and keys");
@@ -205,7 +202,7 @@ public class OnboardProcessor extends ActionProcessor {
             String keyFile = outputDirectory + "/" + baseFileName + ".key";
             
             String privateKeyBase64 = SecurityUtils.decrypt(ReaderHelper.readFileAsString(keyFile));
-            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyBase64, csrConfigDto.getKeyPassword());
+            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyBase64, null);
 
         } catch (Exception e) {
             log.error("Failed to load private key", e);

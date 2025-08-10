@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class CsrConfigDto {
     private String enName;
     private String serialNumber;
-    private String keyPassword;
 
     @JsonProperty("keySize")
     private int keySize;
@@ -32,14 +31,6 @@ public class CsrConfigDto {
 
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
-    }
-
-    public String getKeyPassword() {
-        return keyPassword;
-    }
-
-    public void setKeyPassword(String keyPassword) {
-        this.keyPassword = keyPassword;
     }
 
     public int getKeySize() {
@@ -72,10 +63,6 @@ public class CsrConfigDto {
 
     public void setMinorVersion(int minorVersion) {
         this.minorVersion = minorVersion;
-    }
-
-    public String getPassword() {
-        return keyPassword;
     }
 
 

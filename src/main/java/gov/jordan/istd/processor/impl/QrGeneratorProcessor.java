@@ -16,7 +16,6 @@ public class QrGeneratorProcessor extends ActionProcessor {
     private String xmlPath = "";
     private String privateKeyPath = "";
     private String certificatePath = "";
-    private String keyPassword = "";
     private PrivateKey privateKey;
     private String xmlFile;
     private String certificateStr;
@@ -24,16 +23,13 @@ public class QrGeneratorProcessor extends ActionProcessor {
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length < 3 || args.length > 4) {
-            System.out.println("Usage: java -jar fotara-sdk.jar qr-generator <xml-path> <private-key-path> <certificate-path> [key-password]");
+        if (args.length != 3) {
+            System.out.println("Usage: java -jar fotara-sdk.jar qr-generator <xml-path> <private-key-path> <certificate-path>");
             return false;
         }
         xmlPath = args[0];
         privateKeyPath = args[1];
         certificatePath = args[2];
-        if (args.length == 4) {
-            keyPassword = args[3];
-        }
         return true;
     }
 
@@ -70,7 +66,7 @@ public class QrGeneratorProcessor extends ActionProcessor {
         }
         try {
             privateKeyFile = SecurityUtils.decrypt(privateKeyFile);
-            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyFile, keyPassword);
+            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyFile, null);
         } catch (Exception e) {
             log.error(String.format("Failed to read private key [%s]", privateKeyPath), e);
             return false;

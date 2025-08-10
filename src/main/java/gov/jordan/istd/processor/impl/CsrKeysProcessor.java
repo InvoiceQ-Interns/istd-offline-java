@@ -26,25 +26,23 @@ public class CsrKeysProcessor extends ActionProcessor {
     private CsrResponseDto csrResponse;
     private String csrPem;
     private String csrDerBase64;
-    private String encryptedPrivateKeyBase64;
+    private String privateKeyBase64;
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length != 5) {
-            log.info("Usage: java -jar fotara-sdk.jar generate-csr-keys <directory> <en-name> <serial-number> <key-password> <config-file>");
+        if (args.length != 4) {
+            log.info("Usage: java -jar fotara-sdk.jar generate-csr-keys <directory> <en-name> <serial-number> <config-file>");
 
             return false;
         }
         outputDirectory = args[0];
         String enName = args[1];
         String serialNumber = args[2];
-        String keyPassword = args[3];
-        configFilePath = args[4];
+        configFilePath = args[3];
 
         csrConfigDto = new CsrConfigDto();
         csrConfigDto.setEnName(enName);
         csrConfigDto.setSerialNumber(serialNumber);
-        csrConfigDto.setKeyPassword(keyPassword);
 
         return true;
     }
@@ -100,11 +98,6 @@ public class CsrKeysProcessor extends ActionProcessor {
             return false;
         }
 
-        if (StringUtils.isBlank(csrConfigDto.getKeyPassword())) {
-            log.info("Please enter a password for the private key.");
-            return false;
-        }
-
         if (csrConfigDto.getKeySize() < 1024) {
             log.info("Key size must be at least 1024 bits");
             return false;
@@ -135,9 +128,9 @@ public class CsrKeysProcessor extends ActionProcessor {
 
             csrPem = convertToPem("CERTIFICATE REQUEST", csrResponse.getCsrDer());
             csrDerBase64 = cleanedCsr;
-            encryptedPrivateKeyBase64 = Base64.getEncoder().encodeToString(csrResponse.getPrivateKeyBytes());
+            privateKeyBase64 = Base64.getEncoder().encodeToString(csrResponse.getPrivateKeyBytes());
 
-            log.info("Successfully generated CSR and encrypted private key");
+            log.info("Successfully generated CSR and unencrypted private key");
             return true;
 
         } catch (Exception e) {
@@ -161,7 +154,7 @@ public class CsrKeysProcessor extends ActionProcessor {
         String publicKeyBase64 = Base64.getEncoder().encodeToString(csrResponse.getPublicKeyBytes());
 
         boolean valid = WriterHelper.writeFile(csrFile, SecurityUtils.encrypt(csrDerBase64));
-        valid = WriterHelper.writeFile(keyFile, SecurityUtils.encrypt(encryptedPrivateKeyBase64)) && valid;
+        valid = WriterHelper.writeFile(keyFile, SecurityUtils.encrypt(privateKeyBase64)) && valid;
         valid = WriterHelper.writeFile(pubKeyFile, SecurityUtils.encrypt(publicKeyBase64)) && valid;
 
         return valid;

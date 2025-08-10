@@ -98,7 +98,28 @@ public class PrivateKeyUtil {
             return loadPrivateKey(pemContent, password);
         }
 
+        // Try parsing as raw unencrypted PKCS#8 DER data first (most common for new CSR generation)
+        try {
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
 
+            // Try RSA first (most likely for new CSR keys)
+            try {
+                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+                return keyFactory.generatePrivate(keySpec);
+            } catch (Exception rsaException) {
+                // Try EC as fallback
+                try {
+                    KeyFactory keyFactory = KeyFactory.getInstance("EC");
+                    return keyFactory.generatePrivate(keySpec);
+                } catch (Exception ecException) {
+                    // Continue to try encrypted parsing
+                }
+            }
+        } catch (Exception unencryptedException) {
+            // Continue to try encrypted parsing
+        }
+
+        // Try parsing as encrypted PKCS#8 DER data
         try {
             PKCS8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = new PKCS8EncryptedPrivateKeyInfo(privateKeyBytes);
             if (password != null && !password.isEmpty()) {
@@ -110,7 +131,7 @@ public class PrivateKeyUtil {
                 throw new Exception("Encrypted private key requires password");
             }
         } catch (Exception encryptedException) {
-
+            // Try PEM parsing as last resort
             try (PEMParser pemParser = new PEMParser(new StringReader(pemContent))) {
                 Object object = pemParser.readObject();
                 if (object != null) {
@@ -130,33 +151,11 @@ public class PrivateKeyUtil {
                     }
                 }
             } catch (Exception pemException) {
-
-                try {
-                    PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
-
-                    try {
-                        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                        return keyFactory.generatePrivate(keySpec);
-                    } catch (Exception rsaException) {
-                        try {
-                            KeyFactory keyFactory = KeyFactory.getInstance("EC");
-                            return keyFactory.generatePrivate(keySpec);
-                        } catch (Exception ecException) {
-                            throw new Exception("Unable to parse private key format. Encrypted PKCS#8 error: " + encryptedException.getMessage() +
-                                              ", PEM error: " + pemException.getMessage() +
-                                              ", RSA error: " + rsaException.getMessage() +
-                                              ", EC error: " + ecException.getMessage());
-                        }
-                    }
-                } catch (Exception rawException) {
-                    throw new Exception("Unable to parse private key. All parsing attempts failed. " +
-                                      "Encrypted PKCS#8 error: " + encryptedException.getMessage() +
-                                      ", PEM error: " + pemException.getMessage() +
-                                      ", Raw PKCS#8 error: " + rawException.getMessage());
-                }
+                throw new Exception("Unable to parse private key. Unencrypted PKCS#8 error, Encrypted PKCS#8 error: " + encryptedException.getMessage() +
+                                  ", PEM error: " + pemException.getMessage());
             }
         }
 
-        throw new Exception("Unable to determine private key format");
+        throw new Exception("Unable to determine private key format after all attempts");
     }
 }

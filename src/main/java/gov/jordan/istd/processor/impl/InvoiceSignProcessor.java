@@ -18,7 +18,6 @@ public class InvoiceSignProcessor extends ActionProcessor {
     private String privateKeyPath = "";
     private String certificatePath = "";
     private String outputFile = "";
-    private String keyPassword = "";
     private PrivateKey privateKey;
     private String xmlFile;
     private String certificateStr;
@@ -26,17 +25,14 @@ public class InvoiceSignProcessor extends ActionProcessor {
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length < 4 || args.length > 5) {
-            log.info("Usage: java -jar fotara-sdk.jar invoice-sign <xml-path> <private-key-path> <certificate-path> <output-file> [key-password]");
+        if (args.length != 4) {
+            log.info("Usage: java -jar fotara-sdk.jar invoice-sign <xml-path> <private-key-path> <certificate-path> <output-file>");
             return false;
         }
         xmlPath = args[0];
         privateKeyPath = args[1];
         certificatePath = args[2];
         outputFile = args[3];
-        if (args.length == 5) {
-            keyPassword = args[4];
-        }
         return true;
     }
 
@@ -81,7 +77,7 @@ public class InvoiceSignProcessor extends ActionProcessor {
         }
         try {
             privateKeyFile = SecurityUtils.decrypt(privateKeyFile);
-            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyFile, keyPassword);
+            privateKey = PrivateKeyUtil.loadPrivateKey(privateKeyFile, null);
         } catch (Exception e) {
             log.error(String.format("Failed to read private key [%s]", privateKeyPath), e);
             return false;
