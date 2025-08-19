@@ -10,13 +10,13 @@ package gov.jordan.istd.helper;
     
     public class DigitalSignatureHelper {
         private final Logger log = Logger.getLogger("DigitalSignatureHelper");
-
+        
         public DigitalSignature getDigitalSignature(PrivateKey privateKey, String invoiceHash) {
             byte[] xmlHashingBytes = Base64.getDecoder().decode(invoiceHash.getBytes(StandardCharsets.UTF_8));
             byte[] digitalSignatureBytes = signWithPrivateKey(privateKey, xmlHashingBytes);
             return new DigitalSignature(Base64.getEncoder().encodeToString(digitalSignatureBytes), xmlHashingBytes);
         }
-
+        
         private byte[] signWithPrivateKey(PrivateKey privateKey, byte[] messageHash) {
             try {
                 String algorithm = determineSignatureAlgorithm(privateKey);
@@ -29,7 +29,7 @@ package gov.jordan.istd.helper;
                 return null;
             }
         }
-
+        
         private String determineSignatureAlgorithm(PrivateKey privateKey) {
             String keyAlgorithm = privateKey.getAlgorithm();
             switch (keyAlgorithm.toUpperCase()) {

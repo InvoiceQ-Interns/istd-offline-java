@@ -65,13 +65,16 @@ public class SigningHelper {
             String certificateHashing = encodeBase64(
                     bytesToHex(hashStringToBytes(certificateAsString.getBytes(StandardCharsets.UTF_8)))
                             .getBytes(StandardCharsets.UTF_8));
+            log.info("Certificate Hashing: " + certificateHashing);
             String signedPropertiesHashing = populateSignedSignatureProperties(document, nameSpacesMap,
                     certificateHashing, getCurrentTimestamp(), certificate.getIssuerDN().getName(),
                     certificate.getSerialNumber().toString());
 
+            log.info("Signed Properties Hashing: " + signedPropertiesHashing);
             populateUBLExtensions(document, nameSpacesMap, digitalSignature.getDigitalSignature(),
                     signedPropertiesHashing, encodeBase64(digitalSignature.getXmlHashing()),
                     certificateCopy);
+
 
             String qrCode = populateQRCode(document, nameSpacesMap,
                     certificate, digitalSignature.getDigitalSignature(),
@@ -103,9 +106,12 @@ public class SigningHelper {
         xmlDocument = transformXml(xmlDocument, appResources.getAddUBLElementTransformer());
         xmlDocument = xmlDocument.replace("UBL-TO-BE-REPLACED", appResources.getUblXml());
         xmlDocument = transformXml(xmlDocument, appResources.getAddQRElementTransformer());
+
         xmlDocument = xmlDocument.replace("QR-TO-BE-REPLACED", appResources.getQrXml());
+
         xmlDocument = transformXml(xmlDocument, appResources.getAddSignatureElementTransformer());
         xmlDocument = xmlDocument.replace("SIGN-TO-BE-REPLACED", appResources.getSignatureXml());
+
         return xmlDocument;
     }
 
@@ -162,6 +168,7 @@ public class SigningHelper {
         populateXmlAttributeValue(document, nameSpacesMap, "/Invoice/ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:Object/xades:QualifyingProperties/xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert/xades:IssuerSerial/ds:X509IssuerName", x509IssuerName);
         populateXmlAttributeValue(document, nameSpacesMap, "/Invoice/ext:UBLExtensions/ext:UBLExtension/ext:ExtensionContent/sig:UBLDocumentSignatures/sac:SignatureInformation/ds:Signature/ds:Object/xades:QualifyingProperties/xades:SignedProperties/xades:SignedSignatureProperties/xades:SigningCertificate/xades:Cert/xades:IssuerSerial/ds:X509SerialNumber", serialNumber);
         String signedSignatureElement = getNodeXmlValue(document, nameSpacesMap);
+       System.out.println("signedSignatureElement: " + signedSignatureElement);
         assert signedSignatureElement != null;
         return encodeBase64(bytesToHex(hashStringToBytes(signedSignatureElement.getBytes(StandardCharsets.UTF_8))).getBytes(StandardCharsets.UTF_8));
     }

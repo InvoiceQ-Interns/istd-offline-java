@@ -59,11 +59,11 @@ public class OnboardProcessor extends ActionProcessor {
         String enName = args[2];
         String serialNumber = args[3];
         configFilePath = args[4];
-
+        
         csrConfigDto = new CsrConfigDto();
         csrConfigDto.setEnName(enName);
         csrConfigDto.setSerialNumber(serialNumber);
-
+        
         client = new FotaraClient(propertiesManager);
         return true;
     }
