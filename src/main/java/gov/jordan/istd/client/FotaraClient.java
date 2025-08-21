@@ -82,25 +82,36 @@ public class FotaraClient {
         return null;
     }
 
-    public EInvoiceResponse submitInvoice(CertificateResponse productionCertificateResponse, String jsonBody) {
+    public EInvoiceResponse submitInvoice(String jsonBody, String clientId, String secretKey) {
         final HttpClient httpClient = HttpClient.newHttpClient();
         final String url = propertiesManager.getProperty("fotara.api.url.prod.invoice");
-        final String auth = productionCertificateResponse.getBinarySecurityToken() + ":" + productionCertificateResponse.getBinarySecurityToken();
-        final String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.US_ASCII));
-        final String authHeader = "Basic " + encodedAuth;
-        final HttpRequest request = getDefaultHttpRequest(jsonBody, url, authHeader);
+
+        final String requestBody = "{ \"invoice\":\"" + jsonBody + "\"}";
+        final HttpRequest request = getSubmitInvoiceHttpRequset(requestBody, url, clientId, secretKey);
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("Response Code: " + response.statusCode());
+            System.out.println("Response Body: " + response.body());
             if (response.statusCode() / 100 == 2) {
                 return JsonUtils.readJson(response.body(), EInvoiceResponse.class);
             }
         } catch (Exception e) {
-            System.out.printf("failed to compliance CSR [%s]\n", e.getMessage());
+            System.out.printf("failed to submit invoice [%s]\n", e.getMessage());
         }
         return null;
     }
 
+    private HttpRequest getSubmitInvoiceHttpRequset(String jsonBody, String url, String clientId, String secretKey) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(60))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
+                .header("Client-Id", clientId)
+                .header("Secret-Key", secretKey)
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                .build();
+    }
     private HttpRequest getDefaultHttpRequest(String jsonBody, String url, String authHeader) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -126,21 +137,20 @@ public class FotaraClient {
                 .build();
     }
 
-    public EInvoiceResponse reportInvoice(CertificateResponse productionCertificateResponse, String jsonBody) {
+    public EInvoiceResponse reportInvoice(String jsonBody, String clientId, String secretKey){
         final HttpClient httpClient = HttpClient.newHttpClient();
         final String url = propertiesManager.getProperty("fotara.api.url.prod.report.invoice");
-        final String auth = productionCertificateResponse.getBinarySecurityToken() + ":" + productionCertificateResponse.getBinarySecurityToken();
-        final String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.US_ASCII));
-        final String authHeader = "Basic " + encodedAuth;
-        final HttpRequest request = getDefaultHttpRequest(jsonBody, url, authHeader);
+        final String requestBody = "{ \"invoice\":\"" + jsonBody + "\"}";
+        final HttpRequest request = getSubmitInvoiceHttpRequset(requestBody, url, clientId, secretKey);
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("Response Code: " + response.statusCode());
+            System.out.println("Response Body: " + response.body());
             if (response.statusCode() / 100 == 2) {
                 return JsonUtils.readJson(response.body(), EInvoiceResponse.class);
             }
         } catch (Exception e) {
-            System.out.printf("failed to compliance CSR [%s]\n", e.getMessage());
+            System.out.printf("failed to report invoice [%s]\n", e.getMessage());
         }
         return null;
     }

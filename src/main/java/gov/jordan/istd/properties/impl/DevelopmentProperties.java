@@ -15,8 +15,8 @@ public class DevelopmentProperties implements PropertiesManager {
         data.put("fotara.api.url.compliance.csr","http://localhost:5212/v1/compliance/csr");
         data.put("fotara.api.url.compliance.invoice","http://localhost:5212/v1/compliance/invoice");
         data.put("fotara.api.url.prod.certificate","http://localhost:5212/v1/prod/certificate");
-        data.put("fotara.api.url.prod.invoice","http://localhost:5212/v1/prod/clear/invoice");
-        data.put("fotara.api.url.prod.report.invoice","http://localhost:5212/v1/prod/report/invoice");
+        data.put("fotara.api.url.prod.invoice","http://qpt.invoiceq.com/service/core/invoices/clearance" );
+        data.put("fotara.api.url.prod.report.invoice", "http://qpt.invoiceq.com/service/core/invoices/reporting" );
         // data.put("fotara.certificate.template","DEV_TEMP");
         data.put("fotara.certificate.template","NQCSignature");
     }

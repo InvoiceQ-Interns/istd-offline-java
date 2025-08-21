@@ -11,65 +11,64 @@ import gov.jordan.istd.security.SecurityUtils;
 import gov.jordan.istd.utils.JsonUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Base64;
 import java.util.Objects;
 
 public class InvoiceSubmitProcessor extends ActionProcessor {
-    private final RequesterGeneratorHelper requesterGeneratorHelper = new RequesterGeneratorHelper();
     private String xmlPath = "";
-    private String productionCertificateResponsePath = "";
+
     private String signedXml;
-    private CertificateResponse productionCertificateResponse;
     private FotaraClient client;
     private EInvoiceResponse eInvoiceResponse;
-    private String outputPath;
+    private String clientId;
+    private String secretKey;
+    private String encodedXml;
+
 
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 3) {
-            log.info("Usage: java -jar fotara-sdk.jar submit <signed-xml-path> <production-certificate-response-path> <output-path>");
+            log.info("Usage: java -jar fotara-sdk.jar submit <signed-xml-path> <client-id> <secret-key>");
             return false;
         }
         xmlPath = args[0];
-        productionCertificateResponsePath = args[1];
-        outputPath = args[2];
+        clientId = args[1];
+        secretKey = args[2];
         client = new FotaraClient(propertiesManager);
         return true;
     }
 
     @Override
     protected boolean validateArgs() {
-        if(StringUtils.isBlank(outputPath)){
-            log.info("Invalid output path");
+        if (StringUtils.isBlank(clientId)){
+            log.info("Client ID is required");
+            return false;
+        }
+
+        if (StringUtils.isBlank(secretKey)) {
+            log.info("Secret Key is required");
             return false;
         }
         signedXml = ReaderHelper.readFileAsString(xmlPath);
         if (StringUtils.isBlank(signedXml)) {
             log.info(String.format("Invalid signed xml [%s]", xmlPath));
+            return false;
         }
-        String productionCertificateResponseStr = ReaderHelper.readFileAsString(productionCertificateResponsePath);
-        if (StringUtils.isBlank(productionCertificateResponseStr)) {
-            log.info(String.format("Invalid production certificate response [%s]", productionCertificateResponsePath));
-        }
-        productionCertificateResponseStr= SecurityUtils.decrypt(productionCertificateResponseStr);
-        productionCertificateResponse = JsonUtils.readJson(productionCertificateResponseStr, CertificateResponse.class);
-        return Objects.nonNull(productionCertificateResponse)
-                && StringUtils.isNotBlank(productionCertificateResponse.getSecret())
-                && StringUtils.isNotBlank(productionCertificateResponse.getBinarySecurityToken());
+
+       return true;
     }
 
     @Override
     protected boolean process() {
-        String jsonBody = requesterGeneratorHelper.generateEInvoiceRequest(signedXml);
-        eInvoiceResponse = client.submitInvoice(productionCertificateResponse, jsonBody);
-        return Objects.nonNull(eInvoiceResponse) && (
-                StringUtils.equalsIgnoreCase(eInvoiceResponse.getStatus(), "CLEARED")
-                        || StringUtils.equalsIgnoreCase(eInvoiceResponse.getStatus(), "REPORTED"));
+        encodedXml = Base64.getEncoder().encodeToString(signedXml.getBytes());
+        client.submitInvoice(encodedXml, clientId, secretKey);
+
+        return true;
     }
 
     @Override
     protected boolean output() {
         log.info(String.format("Response [%s]",JsonUtils.toJson(eInvoiceResponse)));
-        WriterHelper.writeFile(outputPath,JsonUtils.toJson(eInvoiceResponse));
         return true;
     }
 }
