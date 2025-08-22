@@ -98,7 +98,7 @@ public class PrivateKeyUtil {
             return loadPrivateKey(pemContent, password);
         }
 
-        // Try parsing as raw unencrypted PKCS#8 DER data first (most common for new CSR generation)
+      // Try parsing as raw unencrypted PKCS#8 DER data first (most common for new CSR generation)
         try {
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
 
