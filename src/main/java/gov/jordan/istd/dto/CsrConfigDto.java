@@ -119,7 +119,7 @@ public class CsrConfigDto {
     public void loadStandardConfigFromResources() {
         try {
             gov.jordan.istd.loader.AppResourceLoader resourceLoader = new gov.jordan.istd.loader.AppResourceLoader();
-            java.io.InputStreamReader reader = resourceLoader.getInputStreamReader("RSAconfig.json");
+            java.io.InputStreamReader reader = resourceLoader.getInputStreamReader("CSRconfig.json");
 
             StringBuilder content = new StringBuilder();
             char[] buffer = new char[1024];
