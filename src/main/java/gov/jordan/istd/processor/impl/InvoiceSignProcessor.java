@@ -26,7 +26,7 @@ public class InvoiceSignProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 4) {
-            log.info("Usage: java -jar fotara-sdk.jar invoice-sign <xml-path> <private-key-path> <certificate-path> <output-file>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar invoice-sign <xml-path> <private-key-path> <certificate-path> <output-file>");
             return false;
         }
         xmlPath = args[0];

@@ -64,7 +64,7 @@ By automating compliance with e-invoicing regulations, the SDK ensures data inte
 Use the SDK from the command line in the following format:
 
 ```bash
-java -Denv=<env> -jar fotara-sdk.jar <action> <args>
+java -Denv=<env> -jar fotara-sdk-1.0.6-jar-with-dependencies.jar <action> <args>
 ```
 
 ### Environments

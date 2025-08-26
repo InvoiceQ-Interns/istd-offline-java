@@ -23,7 +23,7 @@ public class FotaraMain {
 
     private void execute(String[] args) {
         if (args.length == 0 || StringUtils.isBlank(args[0])) {
-            logger.error("Usage: java -jar fotara-sdk.jar <action> <args>");
+            logger.error("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar <action> <args>");
             return;
         }
         String action = args[0];

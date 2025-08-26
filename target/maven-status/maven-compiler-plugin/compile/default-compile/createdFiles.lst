@@ -17,8 +17,11 @@ gov\jordan\istd\dto\ComplianceInvoiceResponse.class
 gov\jordan\istd\helper\QRGeneratorHelper.class
 gov\jordan\istd\processor\impl\ComplianceSubmitProcessor.class
 gov\jordan\istd\processor\impl\DecryptProcess.class
+gov\jordan\istd\utils\PrivateKeyUtil.class
+gov\jordan\istd\helper\CmsRequestHelper.class
 gov\jordan\istd\helper\HashingHelper.class
 gov\jordan\istd\dto\InfoMessage.class
+gov\jordan\istd\dto\CsrResponseDto.class
 gov\jordan\istd\processor\impl\QrGeneratorProcessor.class
 gov\jordan\istd\utils\ECDSAUtil.class
 gov\jordan\istd\dto\DigitalSignature.class
@@ -36,5 +39,6 @@ gov\jordan\istd\dto\ResponseMessage.class
 gov\jordan\istd\properties\PropertiesFactory.class
 gov\jordan\istd\io\WriterHelper.class
 gov\jordan\istd\security\SecurityUtils.class
+gov\jordan\istd\utils\pemConversionAndStringUtils.class
 gov\jordan\istd\processor\impl\InvoiceSubmitProcessor.class
 gov\jordan\istd\io\ReaderHelper.class

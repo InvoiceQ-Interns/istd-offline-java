@@ -29,7 +29,7 @@ public class ReportSubmitProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 3) {
-            log.info("Usage: java -jar fotara-sdk.jar submit <client-id> <secret-key> <signed-xml-path>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar submit-report <client-id> <secret-key> <signed-xml-path>");
             return false;
         }
         clientId = args[0];

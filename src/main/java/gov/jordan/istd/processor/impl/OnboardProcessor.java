@@ -47,7 +47,7 @@ public class OnboardProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 5) {
-            log.info("Usage: java -jar fotara-sdk.jar onboard <otp> <output-directory> <en-name> <serial-number> <config-file>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar onboard <otp> <output-directory> <en-name> <serial-number> <config-file>");
             return false;
         }
         if(StringUtils.isBlank(args[0]) || !args[0].matches("\\d{6}")){

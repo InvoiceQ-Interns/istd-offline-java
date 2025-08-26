@@ -13,7 +13,7 @@ public class DecryptProcess extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if(args.length!=1){
-            log.info("Usage: java -jar fotara-sdk.jar decrypt <encrypted-file-path>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar decrypt <encrypted-file-path>");
             return false;
         }
         encryptedFilePath=args[0];

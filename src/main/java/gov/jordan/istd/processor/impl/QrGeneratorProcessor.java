@@ -24,7 +24,7 @@ public class QrGeneratorProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 3) {
-            System.out.println("Usage: java -jar fotara-sdk.jar qr-generator <xml-path> <private-key-path> <certificate-path>");
+            System.out.println("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar generate-qr <xml-path> <private-key-path> <certificate-path>");
             return false;
         }
         xmlPath = args[0];

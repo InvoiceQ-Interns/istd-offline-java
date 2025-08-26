@@ -15,7 +15,7 @@ public class InputResolver {
                 return new CsrKeysProcessor();
             case "onboard":
                 return new OnboardProcessor();
-            case "validate":
+            case "invoice-validate":
                 return new InvoiceValidationProcessor();
             case "invoice-sign":
                 return new InvoiceSignProcessor();

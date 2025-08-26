@@ -31,7 +31,7 @@ public class CsrKeysProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 4) {
-            log.info("Usage: java -jar fotara-sdk.jar generate-csr-keys <directory> <en-name> <serial-number> <config-file>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar generate-csr-keys <directory> <en-name> <serial-number> <config-file>");
 
             return false;
         }

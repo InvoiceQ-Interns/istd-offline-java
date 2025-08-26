@@ -7,7 +7,7 @@ public class InvoiceValidationProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if(args.length!=1){
-            log.info("Usage: java -jar fotara-sdk.jar invoice-validate <xml-file-path>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar invoice-validate <xml-file-path>");
             return false;
         }
         xmlFilePath=args[0];

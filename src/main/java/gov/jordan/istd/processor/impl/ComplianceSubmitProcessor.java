@@ -30,7 +30,7 @@ public class ComplianceSubmitProcessor extends ActionProcessor {
     @Override
     protected boolean loadArgs(String[] args) {
         if (args.length != 3) {
-            log.info("Usage: java -jar fotara-sdk.jar submit <signed-xml-path> <compliance-certificate-path> <output-path>");
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar compliance-invoice <signed-xml-path> <compliance-certificate-path> <output-path>");
             return false;
         }
         xmlPath = args[0];
