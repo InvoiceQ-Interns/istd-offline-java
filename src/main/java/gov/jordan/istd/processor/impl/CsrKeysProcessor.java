@@ -1,5 +1,6 @@
 package gov.jordan.istd.processor.impl;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import gov.jordan.istd.dto.CsrConfigDto;
 import gov.jordan.istd.dto.CsrResponseDto;
 import gov.jordan.istd.io.ReaderHelper;
@@ -59,29 +60,35 @@ public class CsrKeysProcessor extends ActionProcessor {
             return false;
         }
 
+        // First load standard config from resources (keySize, templateOid, major, minor)
+        csrConfigDto.loadStandardConfigFromResources();
+
+        // Then load user config from provided file (organizationIdentifier, organizationUnitName, country)
         String configFile = ReaderHelper.readFileAsString(configFilePath);
         if (StringUtils.isBlank(configFile)) {
             log.info(String.format("Config file [%s] is empty", configFilePath));
             return false;
         }
 
-        CsrConfigDto configFromFile = JsonUtils.readJson(configFile, CsrConfigDto.class);
-        if (Objects.isNull(configFromFile)) {
+        // Create a temporary DTO for parsing user config with JSON annotations
+        UserConfigDto userConfig = JsonUtils.readJson(configFile, UserConfigDto.class);
+        if (Objects.isNull(userConfig)) {
             log.info(String.format("Config file [%s] is invalid", configFilePath));
             return false;
         }
 
-        if (configFromFile.getKeySize() > 0) {
-            csrConfigDto.setKeySize(configFromFile.getKeySize());
+        // Apply user config to csrConfigDto
+        if (StringUtils.isNotBlank(userConfig.getCorporateName())) {
+            csrConfigDto.setEnName(userConfig.getCorporateName());
         }
-        if (StringUtils.isNotBlank(configFromFile.getTemplateOid())) {
-            csrConfigDto.setTemplateOid(configFromFile.getTemplateOid());
+        if (StringUtils.isNotBlank(userConfig.getOrganizationIdentifier())) {
+            csrConfigDto.setOrganizationIdentifier(userConfig.getOrganizationIdentifier());
         }
-        if (configFromFile.getMajorVersion() > 0) {
-            csrConfigDto.setMajorVersion(configFromFile.getMajorVersion());
+        if (StringUtils.isNotBlank(userConfig.getOrganizationUnitName())) {
+            csrConfigDto.setOrganizationUnitName(userConfig.getOrganizationUnitName());
         }
-        if (configFromFile.getMinorVersion() >= 0) {
-            csrConfigDto.setMinorVersion(configFromFile.getMinorVersion());
+        if (StringUtils.isNotBlank(userConfig.getCountry())) {
+            csrConfigDto.setCountry(userConfig.getCountry());
         }
 
         return validateCsrConfig();
@@ -98,8 +105,30 @@ public class CsrKeysProcessor extends ActionProcessor {
             return false;
         }
 
+        if (StringUtils.isBlank(csrConfigDto.getOrganizationIdentifier())) {
+            log.info("Organization identifier is required from config file.");
+            return false;
+        }
+
+        if (StringUtils.isBlank(csrConfigDto.getOrganizationUnitName())) {
+            log.info("Organization unit name is required from config file.");
+            return false;
+        }
+
+        if (StringUtils.isBlank(csrConfigDto.getCountry())) {
+            log.info("Country is required from config file.");
+            return false;
+        }
+
         if (csrConfigDto.getKeySize() < 1024) {
             log.info("Key size must be at least 1024 bits");
+            return false;
+        }
+
+        // Validate that DN can be generated
+        String dn = csrConfigDto.getSubjectDn();
+        if (StringUtils.isBlank(dn)) {
+            log.info("Unable to generate DN - missing required fields");
             return false;
         }
 
@@ -182,5 +211,25 @@ public class CsrKeysProcessor extends ActionProcessor {
         pemWriter.writeObject(pemObject);
         pemWriter.close();
         return stringWriter.toString();
+    }
+
+    // Helper DTO class for parsing user config JSON
+    private static class UserConfigDto {
+        @JsonProperty("Corporate Name")
+        private String corporateName;
+
+        @JsonProperty("organization")
+        private String organizationIdentifier;
+
+        @JsonProperty("organizationUnitName")
+        private String organizationUnitName;
+
+        @JsonProperty("Country (ISO2)")
+        private String country;
+
+        public String getCorporateName() { return corporateName; }
+        public String getOrganizationIdentifier() { return organizationIdentifier; }
+        public String getOrganizationUnitName() { return organizationUnitName; }
+        public String getCountry() { return country; }
     }
 }
