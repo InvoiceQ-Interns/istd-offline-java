@@ -213,7 +213,7 @@ public class CsrKeysProcessor extends ActionProcessor {
 
     // Helper DTO class for parsing user config JSON
     private static class UserConfigDto {
-        @JsonProperty("Common Name")
+        @JsonProperty("CommonName")
         private String corporateName;
 
         @JsonProperty("organization")
@@ -225,7 +225,7 @@ public class CsrKeysProcessor extends ActionProcessor {
         @JsonProperty("SerialNumber")
         private String serialNumber;
 
-        @JsonProperty("Country (ISO2)")
+        @JsonProperty("Country(ISO2)")
         private String country;
 
         public String getCorporateName() { return corporateName; }

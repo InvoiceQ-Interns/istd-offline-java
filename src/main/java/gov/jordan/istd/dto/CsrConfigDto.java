@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CsrConfigDto {
 
-    @JsonProperty("Common Name")
+    @JsonProperty("CommonName")
     private String enName;
     @JsonProperty("organization")
     private String organizationIdentifier;
@@ -12,7 +12,7 @@ public class CsrConfigDto {
     private String organizationUnitName;
     @JsonProperty("SerialNumber")
     private String serialNumber;
-    @JsonProperty("Country (ISO2)")
+    @JsonProperty("Country(ISO2)")
     private String country;
 
     @JsonProperty("keySize")
