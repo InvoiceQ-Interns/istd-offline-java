@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CsrConfigDto {
 
-    @JsonProperty("Corporate Name")
+    @JsonProperty("Common Name")
     private String enName;
     @JsonProperty("organization")
     private String organizationIdentifier;

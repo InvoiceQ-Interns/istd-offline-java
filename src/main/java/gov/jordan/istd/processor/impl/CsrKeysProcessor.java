@@ -31,19 +31,14 @@ public class CsrKeysProcessor extends ActionProcessor {
 
     @Override
     protected boolean loadArgs(String[] args) {
-        if (args.length != 4) {
-            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar generate-csr-keys <directory> <en-name> <serial-number> <config-file>");
-
+        if (args.length != 2) {
+            log.info("Usage: java -jar fotara-sdk-1.0.6-jar-with-dependencies.jar generate-csr-keys <directory> <config-file>");
             return false;
         }
         outputDirectory = args[0];
-        String enName = args[1];
-        String serialNumber = args[2];
-        configFilePath = args[3];
+        configFilePath = args[1];
 
         csrConfigDto = new CsrConfigDto();
-        csrConfigDto.setEnName(enName);
-        csrConfigDto.setSerialNumber(serialNumber);
 
         return true;
     }
@@ -80,6 +75,9 @@ public class CsrKeysProcessor extends ActionProcessor {
         // Apply user config to csrConfigDto
         if (StringUtils.isNotBlank(userConfig.getCorporateName())) {
             csrConfigDto.setEnName(userConfig.getCorporateName());
+        }
+        if (StringUtils.isNotBlank(userConfig.getSerialNumber())) {
+            csrConfigDto.setSerialNumber(userConfig.getSerialNumber());
         }
         if (StringUtils.isNotBlank(userConfig.getOrganizationIdentifier())) {
             csrConfigDto.setOrganizationIdentifier(userConfig.getOrganizationIdentifier());
@@ -215,7 +213,7 @@ public class CsrKeysProcessor extends ActionProcessor {
 
     // Helper DTO class for parsing user config JSON
     private static class UserConfigDto {
-        @JsonProperty("Corporate Name")
+        @JsonProperty("Common Name")
         private String corporateName;
 
         @JsonProperty("organization")
@@ -224,12 +222,16 @@ public class CsrKeysProcessor extends ActionProcessor {
         @JsonProperty("organizationUnitName")
         private String organizationUnitName;
 
+        @JsonProperty("SerialNumber")
+        private String serialNumber;
+
         @JsonProperty("Country (ISO2)")
         private String country;
 
         public String getCorporateName() { return corporateName; }
         public String getOrganizationIdentifier() { return organizationIdentifier; }
         public String getOrganizationUnitName() { return organizationUnitName; }
+        public String getSerialNumber() { return serialNumber; }
         public String getCountry() { return country; }
     }
 }

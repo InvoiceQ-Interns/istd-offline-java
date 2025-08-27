@@ -4,6 +4,8 @@ import gov.jordan.istd.dto.CsrConfigDto;
 import gov.jordan.istd.dto.CsrResponseDto;
 import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -22,8 +24,16 @@ public class CmsRequestHelper {
         keyGen.initialize(config.getKeySize());
         KeyPair keyPair = keyGen.generateKeyPair();
 
-        X509Name x509Name = new X509Name(config.getSubjectDn());
-        X500Principal subject = new X500Principal(x509Name.getEncoded());
+        // Create X500Name with explicit string to force exact order: CN, O, OU, SerialNumber, C
+        String dnString = String.format("CN=%s,O=%s,OU=%s,SERIALNUMBER=%s,C=%s",
+                config.getEnName().trim(),
+                config.getOrganizationIdentifier().trim(),
+                config.getOrganizationUnitName().trim(),
+                config.getSerialNumber().trim(),
+                config.getCountry().trim());
+
+        X500Name x500Name = new X500Name(dnString);
+        X500Principal subject = new X500Principal(x500Name.getEncoded());
 
         PKCS10CertificationRequestBuilder builder =
                 new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
